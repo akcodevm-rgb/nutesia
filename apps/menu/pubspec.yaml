@@ -1,0 +1,23 @@
+name: menu_app
+description: Diner-facing 3D menu. Opened by scanning a table QR code.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.0
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  animation_spec: any
+  viewer_3d: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

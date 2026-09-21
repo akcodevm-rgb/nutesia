@@ -7,3 +7,5 @@ environment:
 # Dart pub workspace. Shared lockfile, one `dart pub get` for every member.
 workspace:
   - packages/animation_spec
+  - packages/viewer_3d
+  - apps/menu

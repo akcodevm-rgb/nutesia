@@ -1,0 +1,25 @@
+name: viewer_3d
+description: Renders a 3D menu item with its validated animation spec.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.38.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  animation_spec: any
+  model_viewer_plus: ^1.10.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  assets:
+    - assets/menu3d_effects.js
