@@ -1,0 +1,12 @@
+name: animation_spec
+description: Schema, validator and presets for the 3D menu animation spec.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+resolution: workspace
+
+dev_dependencies:
+  test: ^1.25.0

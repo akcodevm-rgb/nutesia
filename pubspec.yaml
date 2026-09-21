@@ -1,0 +1,9 @@
+name: _menu3d_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+# Dart pub workspace. Shared lockfile, one `dart pub get` for every member.
+workspace:
+  - packages/animation_spec
