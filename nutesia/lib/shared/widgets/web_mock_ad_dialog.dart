@@ -234,7 +234,7 @@ class _WebMockAdDialogState extends State<WebMockAdDialog> {
                             ),
                             const Gap(24),
                             Text(
-                              'Nuto Premium',
+                              'Nutesia Premium',
                               textAlign: TextAlign.center,
                               style: GoogleFonts.outfit(
                                 fontSize: 24,

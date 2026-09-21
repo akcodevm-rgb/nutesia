@@ -194,7 +194,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Nuto',
+              Text('Nutesia',
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge

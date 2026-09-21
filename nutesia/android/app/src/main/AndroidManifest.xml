@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Firebase (auth, Firestore, analytics), AI requests and ads all need the
+         network. Flutter only adds INTERNET to debug builds, so it must be
+         declared here for release builds to work. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Lets the Google Mobile Ads SDK check connectivity before loading ads. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
     <application
-        android:label="nutesia"
+        android:label="Nutesia"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -25,6 +32,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- AdMob app ID. Required by google_mobile_ads: the app crashes at
+             startup without it. This is Google's official TEST app ID, matching
+             the test ad unit IDs in lib/core/services/rewarded_ad_service.dart.
+             Replace both with your real AdMob IDs before publishing. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

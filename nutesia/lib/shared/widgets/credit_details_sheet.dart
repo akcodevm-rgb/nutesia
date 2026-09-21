@@ -79,7 +79,7 @@ class CreditDetailsSheet extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Nuto Credits',
+                        'Nutesia Credits',
                         style: TextStyle(
                           color: Color(0xFFEFF6FF), // AppTheme.textPrimary
                           fontSize: 20,

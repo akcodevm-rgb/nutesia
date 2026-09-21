@@ -37,6 +37,10 @@ class AppConfig {
   }
 
   static String get(String key, [String defaultValue = '']) {
-    return _values[key] ?? dotenv.env[key] ?? defaultValue;
+    // dotenv.env throws if .env was never loaded (e.g. no .env file), so only
+    // read it when loading succeeded; otherwise callers get the default.
+    return _values[key] ??
+        (dotenv.isInitialized ? dotenv.env[key] : null) ??
+        defaultValue;
   }
 }

@@ -35,7 +35,7 @@ class AIService {
   String get _apiKey => AppConfig.get('GROQ_API_KEY');
 
   static const String _systemPrompt = '''
-You are NutoAI, a precise nutrition analysis assistant.
+You are NutesiaAI, a precise nutrition analysis assistant.
 When the user describes food they ate, you must:
 1. Break the input into individual food items.
 2. Estimate realistic quantities if not specified.
@@ -113,7 +113,7 @@ Rules:
     }
 
     if (_apiKey.isEmpty || _apiKey == 'your_groq_api_key_here') {
-      log('NutoAI: No GROQ_API_KEY found, using mock data');
+      log('NutesiaAI: No GROQ_API_KEY found, using mock data');
       return _mockParse(input);
     }
 
@@ -122,7 +122,7 @@ Rules:
       if (rawJson == null) throw Exception('Empty response from AI');
       return _parseGroqResponse(rawJson, input);
     } catch (e) {
-      log('NutoAI: Groq call failed ($e), falling back to mock');
+      log('NutesiaAI: Groq call failed ($e), falling back to mock');
       return _mockParse(input);
     }
   }
@@ -512,7 +512,7 @@ Rules:
   // ─── Deficiency Analysis ──────────────────────────────────────────────────
 
   static const String _deficiencySystemPrompt = '''
-You are NutoAI, a clinical nutrition specialist.
+You are NutesiaAI, a clinical nutrition specialist.
 You are given a user's profile and their average daily nutrient intake (vitamins and minerals) over a period (7 days or 30 days), compared to their Recommended Daily Allowance (RDA) targets.
 
 Analyze this data and return a JSON object estimating potential vitamin and mineral deficiency risks, symptoms they might experience, and highly specific dietary recommendations to resolve these deficiencies.
@@ -555,7 +555,7 @@ Rules:
   }) async {
     log('AIService.analyzeDeficiencies: Running analysis for ${user.name}');
     if (_apiKey.isEmpty || _apiKey == 'your_groq_api_key_here') {
-      log('NutoAI: No GROQ_API_KEY found, using mock deficiency analysis');
+      log('NutesiaAI: No GROQ_API_KEY found, using mock deficiency analysis');
       return _mockDeficiencyAnalysis(user, period, averageIntake, targets);
     }
 

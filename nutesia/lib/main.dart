@@ -44,18 +44,18 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: NutoApp(),
+      child: NutesiaApp(),
     ),
   );
 }
 
-class NutoApp extends StatelessWidget {
-  const NutoApp({super.key});
+class NutesiaApp extends StatelessWidget {
+  const NutesiaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Nuto',
+      title: 'Nutesia',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       navigatorObservers: [AnalyticsService.instance.observer],
@@ -134,7 +134,7 @@ class _SplashScreen extends StatelessWidget {
             ),
             const Gap(20),
             Text(
-              'Nuto',
+              'Nutesia',
               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primary,

@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Icon(Icons.eco, size: 64, color: AppTheme.primary),
                 const Gap(16),
                 const Text(
-                  'Welcome to Nuto',
+                  'Welcome to Nutesia',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
