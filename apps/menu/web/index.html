@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="3D animated menu">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -29,8 +29,15 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>menu_app</title>
+  <title>Menu</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Flutter web inserts platform views with innerHTML, which never runs
+    <script> tags, so the 3D viewer's scripts have to be loaded by the page.
+  -->
+  <script type="module" src="assets/packages/model_viewer_plus/assets/model-viewer.min.js" defer></script>
+  <script src="assets/packages/viewer_3d/assets/menu3d_effects.js" defer></script>
 </head>
 <body>
   <!--

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:animation_spec/animation_spec.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:viewer_3d/viewer_3d.dart';
+import 'package:test/test.dart';
+import 'package:viewer_3d/viewer_config.dart';
 
 AnimationSpec spec(Map<String, Object?> raw) =>
     AnimationSpecValidator.validate(raw).spec;
@@ -87,6 +87,13 @@ void main() {
       final warm = ViewerConfig.fromSpec(spec({'lighting': 'warm_studio'}));
       expect(moody.specHtml, contains('data-theme="dark"'));
       expect(warm.specHtml, contains('data-theme="light"'));
+    });
+  });
+
+  group('luminance', () {
+    test('matches the WCAG endpoints', () {
+      expect(relativeLuminance(0xFF000000), 0);
+      expect(relativeLuminance(0xFFFFFFFF), closeTo(1, 1e-9));
     });
   });
 

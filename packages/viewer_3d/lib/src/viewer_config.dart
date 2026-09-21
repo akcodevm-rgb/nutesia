@@ -1,6 +1,7 @@
 /// Translates a validated [AnimationSpec] into `<model-viewer>` settings.
 ///
-/// Kept free of widgets so the mapping is unit-testable. The split of
+/// Pure Dart (no `dart:ui`) so it runs under plain `dart test`, without the
+/// Flutter test engine. The split of
 /// responsibility is:
 ///
 /// * **model-viewer attributes** handle what model-viewer does natively and
@@ -12,7 +13,7 @@
 library;
 
 import 'dart:convert';
-import 'dart:ui' show Color;
+import 'dart:math' show pow;
 
 import 'package:animation_spec/animation_spec.dart';
 
@@ -27,31 +28,44 @@ class LightingLook {
   final double exposure;
   final double shadowIntensity;
 
-  /// Backdrop behind the model. Most of the preset's mood comes from here,
-  /// since model-viewer has no coloured-light API.
-  final Color background;
+  /// Backdrop behind the model as 0xAARRGGBB. Most of the preset's mood
+  /// comes from here, since model-viewer has no coloured-light API.
+  final int background;
+
+  /// Whether light effects need toning down against this backdrop.
+  bool get isDark => relativeLuminance(background) < 0.3;
+}
+
+/// WCAG relative luminance of an 0xAARRGGBB colour, ignoring alpha.
+double relativeLuminance(int argb) {
+  double channel(int shift) {
+    final c = ((argb >> shift) & 0xFF) / 255;
+    return c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4).toDouble();
+  }
+
+  return 0.2126 * channel(16) + 0.7152 * channel(8) + 0.0722 * channel(0);
 }
 
 const Map<LightingPreset, LightingLook> lightingLooks = {
   LightingPreset.warmStudio: LightingLook(
     exposure: 1.05,
     shadowIntensity: 1.0,
-    background: Color(0xFFF6EBDD),
+    background: 0xFFF6EBDD,
   ),
   LightingPreset.brightDaylight: LightingLook(
     exposure: 1.3,
     shadowIntensity: 0.6,
-    background: Color(0xFFEAF4FB),
+    background: 0xFFEAF4FB,
   ),
   LightingPreset.darkMoody: LightingLook(
     exposure: 0.75,
     shadowIntensity: 1.6,
-    background: Color(0xFF1B1714),
+    background: 0xFF1B1714,
   ),
   LightingPreset.neon: LightingLook(
     exposure: 0.95,
     shadowIntensity: 0.8,
-    background: Color(0xFF1A1033),
+    background: 0xFF1A1033,
   ),
 };
 
@@ -97,7 +111,7 @@ class ViewerConfig {
       look: look,
       specHtml: specScriptTag(
         spec,
-        darkBackground: look.background.computeLuminance() < 0.3,
+        darkBackground: look.isDark,
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:animation_spec/animation_spec.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show rootBundle;
@@ -90,7 +92,7 @@ class MenuItemViewer extends StatelessWidget {
       fieldOfView: c.fieldOfView,
       exposure: c.look.exposure,
       shadowIntensity: c.look.shadowIntensity,
-      backgroundColor: c.look.background,
+      backgroundColor: Color(c.look.background),
       innerModelViewerHtml: c.specHtml,
       relatedJs: runtimeJs,
       debugLogging: false,
