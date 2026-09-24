@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "232969473209",
+    "project_id": "nutesia",
+    "storage_bucket": "nutesia.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:232969473209:android:7c5678d100efb22a1d5f68",
+        "android_client_info": {
+          "package_name": "com.skyrain.nutesia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsFN7T7Ot0Zu3i2PPG5KE6M_wIMZMU5oo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
