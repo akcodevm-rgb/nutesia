@@ -14,8 +14,6 @@ class LegalConstants {
   /// Google Play's "delete your account" link for the store listing.
   static const String deleteAccountUrl = '$baseUrl/delete-account.html';
 
-  /// Support address. Empty until a working mailbox exists: the app hides
-  /// "Contact Support" while it's empty. Also fill in the matching
-  /// placeholder in web/privacy.html, terms.html and delete-account.html.
-  static const String supportEmail = '';
+  /// Support address shown in the app and on the legal pages.
+  static const String supportEmail = 'care@nutesia.in';
 }
