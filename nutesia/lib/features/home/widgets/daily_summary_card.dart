@@ -111,9 +111,9 @@ class _CaloriePctBadge extends StatelessWidget {
       width: 64,
       height: 64,
       decoration: BoxDecoration(
-        color: AppTheme.calColor.withOpacity(0.1),
+        color: AppTheme.calColor.withValues(alpha: 0.1),
         shape: BoxShape.circle,
-        border: Border.all(color: AppTheme.calColor.withOpacity(0.3), width: 2),
+        border: Border.all(color: AppTheme.calColor.withValues(alpha: 0.3), width: 2),
       ),
       child: Center(
         child: Text(
@@ -187,9 +187,9 @@ class _MacroMini extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
+          color: color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,7 +221,7 @@ class _MacroMini extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: pct,
                 minHeight: 3,
-                backgroundColor: color.withOpacity(0.15),
+                backgroundColor: color.withValues(alpha: 0.15),
                 valueColor: AlwaysStoppedAnimation(color),
               ),
             ),

@@ -100,12 +100,12 @@ class AnalyticsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: selected == AnalyticsPeriod.weekly
-                      ? AppTheme.primary.withOpacity(0.12)
+                      ? AppTheme.primary.withValues(alpha: 0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: selected == AnalyticsPeriod.weekly
-                        ? AppTheme.primary.withOpacity(0.3)
+                        ? AppTheme.primary.withValues(alpha: 0.3)
                         : Colors.transparent,
                   ),
                 ),
@@ -132,12 +132,12 @@ class AnalyticsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: selected == AnalyticsPeriod.monthly
-                      ? AppTheme.primary.withOpacity(0.12)
+                      ? AppTheme.primary.withValues(alpha: 0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: selected == AnalyticsPeriod.monthly
-                        ? AppTheme.primary.withOpacity(0.3)
+                        ? AppTheme.primary.withValues(alpha: 0.3)
                         : Colors.transparent,
                   ),
                 ),
@@ -171,7 +171,7 @@ class AnalyticsScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.08),
+              color: AppTheme.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -243,7 +243,7 @@ class AnalyticsScreen extends ConsumerWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.calColor.withOpacity(0.12),
+                  color: AppTheme.calColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -298,7 +298,7 @@ class AnalyticsScreen extends ConsumerWidget {
                                               ]
                                             : [
                                                 AppTheme.calColor
-                                                    .withOpacity(0.5),
+                                                    .withValues(alpha: 0.5),
                                                 AppTheme.calColor
                                               ],
                                     begin: Alignment.bottomCenter,
@@ -309,7 +309,7 @@ class AnalyticsScreen extends ConsumerWidget {
                                       ? [
                                           BoxShadow(
                                             color: AppTheme.primary
-                                                .withOpacity(0.4),
+                                                .withValues(alpha: 0.4),
                                             blurRadius: 6,
                                             offset: const Offset(0, -2),
                                           )
@@ -407,9 +407,9 @@ class AnalyticsScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.12)),
+          border: Border.all(color: color.withValues(alpha: 0.12)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -495,7 +495,7 @@ class AnalyticsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.error.withOpacity(0.12),
+                  color: AppTheme.error.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -524,11 +524,11 @@ class AnalyticsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color:
-                      isLow ? AppTheme.error.withOpacity(0.04) : AppTheme.card,
+                      isLow ? AppTheme.error.withValues(alpha: 0.04) : AppTheme.card,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isLow
-                        ? AppTheme.error.withOpacity(0.3)
+                        ? AppTheme.error.withValues(alpha: 0.3)
                         : AppTheme.cardBorder,
                     width: isLow ? 1.5 : 1,
                   ),
@@ -552,7 +552,7 @@ class AnalyticsScreen extends ConsumerWidget {
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: '${m.avg.toStringAsFixed(1)}',
+                                text: m.avg.toStringAsFixed(1),
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
@@ -575,8 +575,8 @@ class AnalyticsScreen extends ConsumerWidget {
                             value: m.pct.clamp(0.0, 1.0),
                             minHeight: 3,
                             backgroundColor: isLow
-                                ? AppTheme.error.withOpacity(0.15)
-                                : AppTheme.primary.withOpacity(0.15),
+                                ? AppTheme.error.withValues(alpha: 0.15)
+                                : AppTheme.primary.withValues(alpha: 0.15),
                             valueColor: AlwaysStoppedAnimation(
                               isLow ? AppTheme.error : AppTheme.primary,
                             ),
@@ -607,7 +607,7 @@ class AnalyticsScreen extends ConsumerWidget {
 
     return GlassCard(
       padding: const EdgeInsets.all(20),
-      borderColor: AppTheme.primary.withOpacity(0.2),
+      borderColor: AppTheme.primary.withValues(alpha: 0.2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -616,7 +616,7 @@ class AnalyticsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.12),
+                  color: AppTheme.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.psychology_outlined,
@@ -767,9 +767,9 @@ class AnalyticsScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: riskColor.withOpacity(0.12),
+                color: riskColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: riskColor.withOpacity(0.4)),
+                border: Border.all(color: riskColor.withValues(alpha: 0.4)),
               ),
               child: Text(
                 '$riskLevel Risk',
@@ -808,16 +808,17 @@ class AnalyticsScreen extends ConsumerWidget {
                 [];
 
             Color probColor = AppTheme.primary;
-            if (prob.toLowerCase() == 'high')
+            if (prob.toLowerCase() == 'high') {
               probColor = AppTheme.error;
-            else if (prob.toLowerCase() == 'moderate')
+            } else if (prob.toLowerCase() == 'moderate') {
               probColor = AppTheme.warning;
+            }
 
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppTheme.card.withOpacity(0.5),
+                color: AppTheme.card.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppTheme.cardBorder),
               ),
@@ -902,7 +903,7 @@ class AnalyticsScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.primary.withOpacity(0.08),
+                      color: AppTheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.restaurant_rounded,

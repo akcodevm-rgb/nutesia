@@ -179,7 +179,7 @@ class _ConfirmFoodScreenState extends ConsumerState<ConfirmFoodScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppTheme.mealColor(widget.mealType).withOpacity(0.12),
+                      color: AppTheme.mealColor(widget.mealType).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -200,7 +200,7 @@ class _ConfirmFoodScreenState extends ConsumerState<ConfirmFoodScreen> {
               child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: _editableFoods.length + 1,
-                separatorBuilder: (_, __) => const Gap(12),
+                separatorBuilder: (_, _) => const Gap(12),
                 itemBuilder: (ctx, i) {
                   if (i == _editableFoods.length) {
                     // AI Explanation card
@@ -301,7 +301,7 @@ class _EditableFoodCardState extends State<_EditableFoodCard> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
+                  color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
@@ -374,7 +374,8 @@ class _EditableFoodCardState extends State<_EditableFoodCard> {
               // Unit dropdown
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: AppConstants.foodUnits.contains(widget.food.unit)
+                  key: ValueKey(widget.food.unit),
+                  initialValue: AppConstants.foodUnits.contains(widget.food.unit)
                       ? widget.food.unit
                       : AppConstants.foodUnits.first,
                   dropdownColor: AppTheme.surface,
@@ -438,7 +439,7 @@ class _NutriBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: RichText(
@@ -503,14 +504,14 @@ class _ExplanationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      borderColor: AppTheme.primary.withOpacity(0.25),
+      borderColor: AppTheme.primary.withValues(alpha: 0.25),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.12),
+              color: AppTheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child:

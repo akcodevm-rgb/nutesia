@@ -55,7 +55,6 @@ class AppTheme {
   static ThemeData get darkTheme {
     final base = ThemeData.dark();
     return base.copyWith(
-      useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: const ColorScheme.dark(
         primary: primary,
@@ -131,7 +130,7 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: card,
-        selectedColor: primary.withOpacity(0.2),
+        selectedColor: primary.withValues(alpha: 0.2),
         side: const BorderSide(color: cardBorder),
         labelStyle: GoogleFonts.outfit(color: textPrimary, fontSize: 13),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

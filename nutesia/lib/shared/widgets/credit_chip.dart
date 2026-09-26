@@ -53,7 +53,7 @@ class CreditChip extends ConsumerWidget {
                   color: AppTheme.primary,
                 ),
               ),
-              error: (_, __) => const Text(
+              error: (_, _) => const Text(
                 '!',
                 style: TextStyle(
                   color: AppTheme.warning,

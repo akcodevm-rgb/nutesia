@@ -132,7 +132,7 @@ class DeficiencyAnalysisNotifier
 
   DeficiencyAnalysisNotifier(this._ref) : super(DeficiencyAnalysisState()) {
     // Reset analysis result when the time period changes
-    _ref.listen<AnalyticsPeriod>(analyticsPeriodProvider, (_, __) {
+    _ref.listen<AnalyticsPeriod>(analyticsPeriodProvider, (_, _) {
       reset();
     });
   }

@@ -195,7 +195,7 @@ class _AddFoodScreenState extends ConsumerState<AddFoodScreen> {
                               horizontal: 16, vertical: 10),
                           decoration: BoxDecoration(
                             color: selected
-                                ? color.withOpacity(0.15)
+                                ? color.withValues(alpha: 0.15)
                                 : AppTheme.card,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
@@ -360,7 +360,7 @@ class _AnalyzingWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
       baseColor: AppTheme.card,
-      highlightColor: AppTheme.primary.withOpacity(0.2),
+      highlightColor: AppTheme.primary.withValues(alpha: 0.2),
       child: Container(
         height: 54,
         decoration: BoxDecoration(

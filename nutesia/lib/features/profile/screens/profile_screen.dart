@@ -8,7 +8,9 @@ import '../../../shared/models/user_model.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../providers/profile_provider.dart';
 import '../../onboarding/screens/profile_setup_screen.dart';
-import '../../../shared/utils/url_helper.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../core/constants/legal_constants.dart';
+import '../../../core/services/account_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -71,7 +73,7 @@ class _ProfileContent extends StatelessWidget {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.12),
+                  color: AppTheme.primary.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -140,7 +142,7 @@ class _ProfileContent extends StatelessWidget {
 
         // ── BMI Card ──────────────────────────────────────
         GlassCard(
-          borderColor: bmiColor.withOpacity(0.3),
+          borderColor: bmiColor.withValues(alpha: 0.3),
           child: Column(
             children: [
               Row(
@@ -148,7 +150,7 @@ class _ProfileContent extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: bmiColor.withOpacity(0.12),
+                      color: bmiColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(Icons.monitor_heart_outlined,
@@ -176,9 +178,9 @@ class _ProfileContent extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: bmiColor.withOpacity(0.12),
+                      color: bmiColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: bmiColor.withOpacity(0.3)),
+                      border: Border.all(color: bmiColor.withValues(alpha: 0.3)),
                     ),
                     child: Text(user.bmiCategory,
                         style: TextStyle(
@@ -234,17 +236,24 @@ class _ProfileContent extends StatelessWidget {
               _MenuRow(
                 'Privacy Policy',
                 Icons.privacy_tip_outlined,
-                onTap: () => launchUrlString('privacy.html'),
+                onTap: () => _open(context, LegalConstants.privacyUrl),
               ),
               _MenuRow(
                 'Terms of Service',
                 Icons.description_outlined,
-                onTap: () => launchUrlString('terms.html'),
+                onTap: () => _open(context, LegalConstants.termsUrl),
               ),
+              if (LegalConstants.supportEmail.isNotEmpty)
+                _MenuRow(
+                  'Contact Support',
+                  Icons.mail_outline_rounded,
+                  onTap: () => _open(context, 'mailto:${LegalConstants.supportEmail}'),
+                ),
               _MenuRow(
-                'Contact Support',
-                Icons.mail_outline_rounded,
-                onTap: () => launchUrlString('mailto:akhilcode74@gmail.com'),
+                'Delete account',
+                Icons.delete_forever_outlined,
+                color: AppTheme.error,
+                onTap: () => _confirmDeleteAccount(context),
                 isLast: true,
               ),
             ],
@@ -253,6 +262,28 @@ class _ProfileContent extends StatelessWidget {
         const Gap(80),
       ],
     );
+  }
+
+  Future<void> _open(BuildContext context, String url) async {
+    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Couldn't open $url")),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final deleted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _DeleteAccountDialog(),
+    );
+    if (deleted == true && context.mounted) {
+      // Signing out happened with the deletion; the auth listener in main.dart
+      // shows the login screen. Close anything stacked above it.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   Color _bmiColor(String cat) {
@@ -294,9 +325,9 @@ class _StatBox extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.07),
+          color: color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -483,7 +514,7 @@ class _TabBtn extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.primary.withOpacity(0.15)
+              ? AppTheme.primary.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
@@ -542,8 +573,10 @@ class _MenuRow extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool isLast;
+  final Color? color; // for destructive actions
 
-  const _MenuRow(this.label, this.icon, {required this.onTap, this.isLast = false});
+  const _MenuRow(this.label, this.icon,
+      {required this.onTap, this.isLast = false, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -556,9 +589,9 @@ class _MenuRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
             child: Row(
               children: [
-                Icon(icon, color: AppTheme.primary, size: 20),
+                Icon(icon, color: color ?? AppTheme.primary, size: 20),
                 const Gap(12),
-                Text(label, style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14)),
+                Text(label, style: TextStyle(color: color ?? AppTheme.textPrimary, fontSize: 14)),
                 const Spacer(),
                 const Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary, size: 20),
               ],
@@ -566,6 +599,100 @@ class _MenuRow extends StatelessWidget {
           ),
         ),
         if (!isLast) Divider(height: 1, color: AppTheme.divider),
+      ],
+    );
+  }
+}
+
+/// Confirms account deletion. Email accounts re-enter their password (Firebase
+/// requires a recent sign-in to delete an account); guest accounts just confirm.
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _service = AccountService();
+  final _password = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _delete() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await _service.deleteAccount(password: _password.text);
+      if (mounted) Navigator.of(context).pop(true);
+    } on AccountDeletionException catch (e) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = e.message;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.surface,
+      title: const Text('Delete account?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'This permanently deletes your account, profile, food logs and '
+            'credits. It cannot be undone.',
+            style: TextStyle(color: AppTheme.textSecondary),
+          ),
+          if (_service.needsPassword) ...[
+            const Gap(16),
+            Text('Enter the password for ${_service.email}',
+                style: const TextStyle(fontSize: 13)),
+            const Gap(8),
+            TextField(
+              controller: _password,
+              obscureText: true,
+              enabled: !_busy,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => _busy ? null : _delete(),
+            ),
+          ],
+          if (_error != null) ...[
+            const Gap(12),
+            Text(_error!, style: const TextStyle(color: AppTheme.error, fontSize: 13)),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: _busy ? null : _delete,
+          child: _busy
+              ? const SizedBox(
+                  width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Delete permanently',
+                  style: TextStyle(color: AppTheme.error)),
+        ),
       ],
     );
   }

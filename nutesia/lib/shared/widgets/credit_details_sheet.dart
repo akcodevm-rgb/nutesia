@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -157,7 +156,7 @@ class CreditDetailsSheet extends ConsumerWidget {
                             color: AppTheme.primary,
                           ),
                         ),
-                        error: (_, __) => const Text(
+                        error: (_, _) => const Text(
                           '--',
                           style: TextStyle(
                             color: AppTheme.warning,

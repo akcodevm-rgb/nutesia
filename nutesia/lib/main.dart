@@ -100,7 +100,7 @@ class _AppRouter extends ConsumerWidget {
         return const HomeScreen();
       },
       loading: () => const _SplashScreen(),
-      error: (_, __) => const ProfileSetupScreen(),
+      error: (_, _) => const ProfileSetupScreen(),
     );
   }
 }
@@ -121,10 +121,10 @@ class _SplashScreen extends StatelessWidget {
               width: 88,
               height: 88,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.12),
+                color: AppTheme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: AppTheme.primary.withOpacity(0.3),
+                  color: AppTheme.primary.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
