@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.skyrain.nutesia</string>
+	<string>com.blueregan.nutesia</string>
 	<key>PROJECT_ID</key>
 	<string>nutesia</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:232969473209:ios:f10df3f768f2a0281d5f68</string>
+	<string>1:232969473209:ios:0fa3a5a18c97adba1d5f68</string>
 </dict>
 </plist>
