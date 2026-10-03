@@ -15,6 +15,9 @@ type Config struct {
 	FirebaseProjectID       string
 	FirebaseAPIKey          string
 	FirebaseCredentialsFile string
+	// QAEmails lists lowercase account emails allowed to use the test_<uid>
+	// alias, which gets unlimited credits. Empty means no QA accounts.
+	QAEmails map[string]bool
 }
 
 func Load() Config {
@@ -43,7 +46,19 @@ func Load() Config {
 		FirebaseProjectID:       firebaseProjectID,
 		FirebaseAPIKey:          os.Getenv("FIREBASE_API_KEY"),
 		FirebaseCredentialsFile: os.Getenv("FIREBASE_CREDENTIALS_FILE"),
+		QAEmails:                parseEmailList(os.Getenv("QA_EMAILS")),
 	}
+}
+
+// parseEmailList turns a comma-separated list into a lowercase lookup set.
+func parseEmailList(raw string) map[string]bool {
+	emails := map[string]bool{}
+	for _, e := range strings.Split(raw, ",") {
+		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {
+			emails[e] = true
+		}
+	}
+	return emails
 }
 
 // loadDotEnv keeps local setup dependency-free. Runtime environment variables
