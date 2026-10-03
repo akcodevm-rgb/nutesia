@@ -1,171 +1,113 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_utils.dart';
-import '../../../core/constants/credit_constants.dart';
 import '../../../core/providers/credit_provider.dart';
-import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/credit_chip.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../providers/analytics_provider.dart';
+import 'skeuo_widgets.dart';
+import '../../../shared/widgets/error_views/error_views.dart';
 
-class AnalyticsScreen extends ConsumerWidget {
+class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final period = ref.watch(analyticsPeriodProvider);
-    final trendPoints = ref.watch(dailyTrendPointsProvider);
-    final logsAsync = ref.watch(historicalLogsProvider);
+  Widget build(BuildContext context) {
+    return Consumer<AnalyticsProvider>(
+      builder: (context, analytics, _) {
+        final period = analytics.period;
+        final trendPoints = analytics.trendPoints;
+        final isLoading = analytics.isLoadingLogs;
+        final error = analytics.logsError;
 
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: const Text('Analytics & Trends'),
-        actions: [
-          const Center(child: CreditChip()),
-          const Gap(8),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.refresh(historicalLogsProvider),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: logsAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary),
-          ),
-          error: (err, stack) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Text(
-                'Failed to load analytics data: $err',
-                style: const TextStyle(color: AppTheme.error),
-                textAlign: TextAlign.center,
+        return Scaffold(
+          backgroundColor: AppTheme.background,
+          appBar: AppBar(
+            title: const Text('Clinical Analytics & Trends'),
+            actions: [
+              const Center(child: CreditChip()),
+              const Gap(8),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () => analytics.refresh(),
               ),
+            ],
+          ),
+          body: SafeArea(
+            child: Builder(
+              builder: (context) {
+                if (isLoading && trendPoints.isEmpty) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppTheme.primary),
+                  );
+                }
+
+                if (error != null && trendPoints.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: AppErrorCard(
+                        error: ErrorParser.parse(error),
+                        onAction: () => analytics.refresh(),
+                      ),
+                    ),
+                  );
+                }
+
+                final hasData = trendPoints.any((pt) => pt.nutrition.calories > 0);
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPeriodSelector(analytics, period),
+                      const Gap(24),
+                      if (!hasData) ...[
+                        _buildEmptyStateCard(context),
+                      ] else ...[
+                        _buildCalorieTrendChart(context, trendPoints),
+                        const Gap(24),
+                        _buildMacroAverages(context, trendPoints),
+                        const Gap(24),
+                        _buildMicronutrientStatus(context, trendPoints),
+                        const Gap(24),
+                        _buildAiDeficiencyPredictor(context, analytics, trendPoints),
+                        const Gap(32),
+                      ]
+                    ],
+                  ),
+                );
+              },
             ),
           ),
-          data: (logs) {
-            final hasData = trendPoints.any((pt) => pt.nutrition.calories > 0);
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildPeriodSelector(ref, period),
-                  const Gap(20),
-                  if (!hasData) ...[
-                    _buildEmptyStateCard(context),
-                  ] else ...[
-                    _buildCalorieTrendChart(context, trendPoints, ref),
-                    const Gap(20),
-                    _buildMacroAverages(context, trendPoints),
-                    const Gap(20),
-                    _buildMicronutrientStatus(context, trendPoints, ref),
-                    const Gap(20),
-                    _buildAiDeficiencyPredictor(context, ref, trendPoints),
-                    const Gap(24),
-                  ]
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+        );
+      },
     );
   }
 
   // ─── Period Selector ────────────────────────────────────────────────────────
 
-  Widget _buildPeriodSelector(WidgetRef ref, AnalyticsPeriod selected) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.cardBorder),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => ref.read(analyticsPeriodProvider.notifier).state =
-                  AnalyticsPeriod.weekly,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: selected == AnalyticsPeriod.weekly
-                      ? AppTheme.primary.withValues(alpha: 0.12)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected == AnalyticsPeriod.weekly
-                        ? AppTheme.primary.withValues(alpha: 0.3)
-                        : Colors.transparent,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    '7 Days (Weekly)',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: selected == AnalyticsPeriod.weekly
-                          ? AppTheme.primary
-                          : AppTheme.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => ref.read(analyticsPeriodProvider.notifier).state =
-                  AnalyticsPeriod.monthly,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: selected == AnalyticsPeriod.monthly
-                      ? AppTheme.primary.withValues(alpha: 0.12)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected == AnalyticsPeriod.monthly
-                        ? AppTheme.primary.withValues(alpha: 0.3)
-                        : Colors.transparent,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    '30 Days (Monthly)',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: selected == AnalyticsPeriod.monthly
-                          ? AppTheme.primary
-                          : AppTheme.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildPeriodSelector(AnalyticsProvider analytics, AnalyticsPeriod selected) {
+    return SkeuoToggle(
+      options: const ['7 Days (Weekly)', '30 Days (Monthly)'],
+      selectedIndex: selected == AnalyticsPeriod.weekly ? 0 : 1,
+      onChanged: (index) {
+        analytics.setPeriod(
+          index == 0 ? AnalyticsPeriod.weekly : AnalyticsPeriod.monthly,
+        );
+      },
     );
   }
 
   // ─── Empty State Card ──────────────────────────────────────────────────────
 
   Widget _buildEmptyStateCard(BuildContext context) {
-    return GlassCard(
+    return SkeuoCard(
       padding: const EdgeInsets.all(32),
-      borderColor: AppTheme.cardBorder,
       child: Column(
         children: [
           Container(
@@ -173,6 +115,8 @@ class AnalyticsScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppTheme.primary.withValues(alpha: 0.08),
               shape: BoxShape.circle,
+              border: Border.all(
+                  color: AppTheme.primary.withValues(alpha: 0.2), width: 1.5),
             ),
             child: const Icon(
               Icons.analytics_outlined,
@@ -188,7 +132,7 @@ class AnalyticsScreen extends ConsumerWidget {
                 ),
           ),
           const Gap(10),
-          Text(
+          const Text(
             'Start logging your meals on the Home tab. Once you log daily intake, weekly and monthly nutrition analysis will populate here!',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -204,22 +148,11 @@ class AnalyticsScreen extends ConsumerWidget {
   Widget _buildCalorieTrendChart(
     BuildContext context,
     List<DailyTrendPoint> points,
-    WidgetRef ref,
   ) {
-    final userProfile = ref.watch(userProfileProvider).valueOrNull;
+    final userProfile = context.watch<UserProfileProvider>().user;
     final calorieTarget = userProfile?.dailyTargets.calories ?? 2000.0;
 
-    // Find max value in list to scale heights
-    double maxVal = calorieTarget;
-    for (final pt in points) {
-      if (pt.nutrition.calories > maxVal) {
-        maxVal = pt.nutrition.calories;
-      }
-    }
-    // Give some breathing room at the top
-    maxVal *= 1.1;
-
-    return GlassCard(
+    return SkeuoCard(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,122 +160,51 @@ class AnalyticsScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Calorie Intake History',
                       style: TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 12)),
-                  const Gap(4),
-                  const Text('Daily Intake vs. Target',
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
+                  Gap(4),
+                  Text('Daily Intake vs. Target',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 ],
               ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.calColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.calColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   'Goal: ${calorieTarget.round()} kcal',
                   style: const TextStyle(
                       color: AppTheme.calColor,
                       fontSize: 11,
-                      fontWeight: FontWeight.w600),
+                      fontWeight: FontWeight.bold),
                 ),
               )
             ],
           ),
           const Gap(24),
-          // Chart view
-          SizedBox(
-            height: 160,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: points.map((pt) {
-                final heightPct =
-                    (pt.nutrition.calories / maxVal).clamp(0.05, 1.0);
-                final metTarget = pt.nutrition.calories >= calorieTarget;
-                final isToday = pt.dateKey == AppDateUtils.todayKey();
-
-                return Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      // Bar
-                      Expanded(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final barHeight = constraints.maxHeight * heightPct;
-                            return Tooltip(
-                              message:
-                                  '${AppDateUtils.toShort(pt.date)}: ${pt.nutrition.calories.round()} kcal',
-                              triggerMode: TooltipTriggerMode.tap,
-                              child: Container(
-                                width: points.length > 7 ? 6 : 14,
-                                height: barHeight,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: isToday
-                                        ? [
-                                            AppTheme.primary,
-                                            AppTheme.primaryLight
-                                          ]
-                                        : metTarget
-                                            ? [
-                                                AppTheme.calColor,
-                                                AppTheme.warning
-                                              ]
-                                            : [
-                                                AppTheme.calColor
-                                                    .withValues(alpha: 0.5),
-                                                AppTheme.calColor
-                                              ],
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                  ),
-                                  borderRadius: BorderRadius.circular(4),
-                                  boxShadow: isToday
-                                      ? [
-                                          BoxShadow(
-                                            color: AppTheme.primary
-                                                .withValues(alpha: 0.4),
-                                            blurRadius: 6,
-                                            offset: const Offset(0, -2),
-                                          )
-                                        ]
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const Gap(8),
-                      // Date label
-                      Text(
-                        points.length > 7
-                            ? (pt.date.day % 5 == 0 || isToday
-                                ? '${pt.date.day}'
-                                : '')
-                            : AppDateUtils.toWeekday(pt.date).substring(0, 3),
-                        style: TextStyle(
-                          color: isToday
-                              ? AppTheme.primary
-                              : AppTheme.textSecondary,
-                          fontSize: 9,
-                          fontWeight:
-                              isToday ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
+          SkeuoLineChart(
+            values1: points.map((pt) => pt.nutrition.calories).toList(),
+            values2: points.map((pt) => calorieTarget).toList(),
+            targetValue: calorieTarget,
+            labels: points.map((pt) {
+              final isToday = pt.dateKey == AppDateUtils.todayKey();
+              if (isToday) return 'Today';
+              return points.length > 7
+                  ? '${pt.date.day}'
+                  : AppDateUtils.toWeekday(pt.date).substring(0, 3);
+            }).toList(),
+            tooltipLabel: 'kcal',
           ),
         ],
       ),
@@ -352,8 +214,9 @@ class AnalyticsScreen extends ConsumerWidget {
   // ─── Macro Averages ────────────────────────────────────────────────────────
 
   Widget _buildMacroAverages(
-      BuildContext context, List<DailyTrendPoint> points) {
-    // Filter to only days where calorie > 0 (to get a representative average of actual eating days)
+    BuildContext context,
+    List<DailyTrendPoint> points,
+  ) {
     final activeDays = points.where((pt) => pt.nutrition.calories > 0).toList();
     final count = activeDays.isEmpty ? 1 : activeDays.length;
 
@@ -371,60 +234,44 @@ class AnalyticsScreen extends ConsumerWidget {
     avgCarbs /= count;
     avgFat /= count;
 
-    return GlassCard(
+    final userProfile = context.watch<UserProfileProvider>().user;
+    final targets = userProfile?.dailyTargets;
+    final proteinTarget = targets?.protein ?? 120.0;
+    final carbsTarget = targets?.carbs ?? 250.0;
+    final fatTarget = targets?.fat ?? 70.0;
+
+    return SkeuoCard(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Average Macronutrient Intake',
+          const Text('Avg Macronutrient Dashboard',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const Gap(16),
+          const Gap(20),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMacroProgress(
-                  context, 'Protein', avgProtein, 'g', AppTheme.proteinColor),
-              const Gap(12),
-              _buildMacroProgress(
-                  context, 'Carbs', avgCarbs, 'g', AppTheme.carbsColor),
-              const Gap(12),
-              _buildMacroProgress(
-                  context, 'Fat', avgFat, 'g', AppTheme.fatColor),
+              SkeuoDial(
+                percent: proteinTarget > 0 ? avgProtein / proteinTarget : 0.0,
+                title: 'Protein',
+                valueText: '${avgProtein.round()}g',
+                activeColor: AppTheme.proteinColor,
+              ),
+              SkeuoDial(
+                percent: carbsTarget > 0 ? avgCarbs / carbsTarget : 0.0,
+                title: 'Carbs',
+                valueText: '${avgCarbs.round()}g',
+                activeColor: AppTheme.carbsColor,
+              ),
+              SkeuoDial(
+                percent: fatTarget > 0 ? avgFat / fatTarget : 0.0,
+                title: 'Fat',
+                valueText: '${avgFat.round()}g',
+                activeColor: AppTheme.fatColor,
+              ),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMacroProgress(
-    BuildContext context,
-    String label,
-    double value,
-    String unit,
-    Color color,
-  ) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.12)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    color: AppTheme.textSecondary, fontSize: 11)),
-            const Gap(4),
-            Text(
-              '${value.round()}$unit',
-              style: TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold, color: color),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -434,12 +281,10 @@ class AnalyticsScreen extends ConsumerWidget {
   Widget _buildMicronutrientStatus(
     BuildContext context,
     List<DailyTrendPoint> points,
-    WidgetRef ref,
   ) {
-    final userProfile = ref.watch(userProfileProvider).valueOrNull;
+    final userProfile = context.watch<UserProfileProvider>().user;
     if (userProfile == null) return const SizedBox.shrink();
 
-    // Average micronutrients over all range days
     final daysCount = points.length;
     double totalVitA = 0;
     double totalVitC = 0;
@@ -469,7 +314,6 @@ class AnalyticsScreen extends ConsumerWidget {
 
     final targets = userProfile.dailyTargets;
 
-    // Helper map of key micro nutrients to track
     final microData = [
       _MicroItem('Vitamin C', avgVitC, targets.vitamins.vitaminC, 'mg'),
       _MicroItem('Iron', avgIron, targets.minerals.iron, 'mg'),
@@ -480,7 +324,6 @@ class AnalyticsScreen extends ConsumerWidget {
       _MicroItem('Zinc', avgZinc, targets.minerals.zinc, 'mg'),
     ];
 
-    // Count how many are critically low (<70%)
     final lowCount = microData.where((m) => m.pct < 0.7).length;
 
     return Column(
@@ -489,7 +332,7 @@ class AnalyticsScreen extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Micronutrient Health',
+            const Text('Micronutrient Health Indicators',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             if (lowCount > 0)
               Container(
@@ -497,94 +340,109 @@ class AnalyticsScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: AppTheme.error.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
                 ),
                 child: Text(
-                  '$lowCount Low Nutrients',
+                  '$lowCount Low',
                   style: const TextStyle(
                       color: AppTheme.error,
                       fontSize: 10,
-                      fontWeight: FontWeight.w600),
+                      fontWeight: FontWeight.bold),
                 ),
               ),
           ],
         ),
         const Gap(12),
         SizedBox(
-          height: 110,
+          height: 125,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: microData.length,
-            separatorBuilder: (c, i) => const Gap(10),
+            separatorBuilder: (c, i) => const Gap(12),
             itemBuilder: (context, index) {
               final m = microData[index];
               final isLow = m.pct < 0.7;
 
-              return Container(
-                width: 120,
+              return SkeuoCard(
+                baseColor:
+                    isLow ? const Color(0xFF1E0E14) : const Color(0xFF0F1524),
+                borderRadius: 16,
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color:
-                      isLow ? AppTheme.error.withValues(alpha: 0.04) : AppTheme.card,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isLow
-                        ? AppTheme.error.withValues(alpha: 0.3)
-                        : AppTheme.cardBorder,
-                    width: isLow ? 1.5 : 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      m.name,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isLow ? AppTheme.error : AppTheme.textPrimary,
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: m.avg.toStringAsFixed(1),
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      isLow ? AppTheme.error : AppTheme.primary,
-                                ),
+                child: SizedBox(
+                  width: 110,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              m.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isLow
+                                    ? AppTheme.error
+                                    : AppTheme.textPrimary,
                               ),
-                              TextSpan(
-                                text: ' / ${m.target.round()}${m.unit}',
-                                style: const TextStyle(
-                                    fontSize: 9, color: AppTheme.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Gap(4),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
-                          child: LinearProgressIndicator(
-                            value: m.pct.clamp(0.0, 1.0),
-                            minHeight: 3,
-                            backgroundColor: isLow
-                                ? AppTheme.error.withValues(alpha: 0.15)
-                                : AppTheme.primary.withValues(alpha: 0.15),
-                            valueColor: AlwaysStoppedAnimation(
-                              isLow ? AppTheme.error : AppTheme.primary,
                             ),
                           ),
-                        ),
-                      ],
-                    )
-                  ],
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isLow ? AppTheme.error : AppTheme.primary,
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      isLow ? AppTheme.error : AppTheme.primary,
+                                  blurRadius: 3,
+                                )
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: m.avg.toStringAsFixed(1),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: isLow
+                                        ? AppTheme.error
+                                        : AppTheme.primary,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' / ${m.target.round()}${m.unit}',
+                                  style: const TextStyle(
+                                      fontSize: 9,
+                                      color: AppTheme.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Gap(6),
+                          SkeuoProgress(
+                            value: m.pct,
+                            color: isLow ? AppTheme.error : AppTheme.primary,
+                            height: 8,
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
                 ),
               );
             },
@@ -598,16 +456,17 @@ class AnalyticsScreen extends ConsumerWidget {
 
   Widget _buildAiDeficiencyPredictor(
     BuildContext context,
-    WidgetRef ref,
+    AnalyticsProvider analytics,
     List<DailyTrendPoint> points,
   ) {
-    final state = ref.watch(deficiencyAnalysisProvider);
-    final period = ref.watch(analyticsPeriodProvider);
+    final state = analytics.deficiencyState;
+    final period = analytics.period;
     final periodStr = period == AnalyticsPeriod.weekly ? 'Weekly' : 'Monthly';
+    final creditProvider = context.read<CreditProvider>();
+    final profileProvider = context.read<UserProfileProvider>();
 
-    return GlassCard(
+    return SkeuoCard(
       padding: const EdgeInsets.all(20),
-      borderColor: AppTheme.primary.withValues(alpha: 0.2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -616,100 +475,81 @@ class AnalyticsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.psychology_outlined,
-                    color: AppTheme.primary, size: 22),
+                    color: AppTheme.primary, size: 24),
               ),
-              const Gap(10),
+              const Gap(12),
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'AI Deficiency Prediction',
+                      'AI Deficiency Diagnostic',
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     Text(
-                      'Analyzes vitamin & mineral intake gaps',
+                      'Bio-nutritional Timeline Analysis',
                       style: TextStyle(
-                          color: AppTheme.textSecondary, fontSize: 11),
+                          color: AppTheme.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500),
                     )
                   ],
                 ),
               )
             ],
           ),
-          const Gap(16),
+          const Gap(20),
           if (state.isLoading) ...[
             _buildLoadingState(),
           ] else if (state.error != null) ...[
-            Text('Analysis error: ${state.error}',
-                style: const TextStyle(color: AppTheme.error)),
-            const Gap(12),
-            if (state.requiredCredits != null && state.currentCredits != null)
-              ElevatedButton.icon(
-                onPressed: () => showNotEnoughCreditsDialog(
-                  context: context,
-                  ref: ref,
-                  requiredCredits: state.requiredCredits!,
-                  currentCredits: state.currentCredits!,
-                  featureName: 'deficiency analysis',
-                ),
-                icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
-                label: const Text('Watch Ad'),
-              )
-            else
-              ElevatedButton(
-                onPressed: () async {
-                  final creditState = ref.read(creditProvider).valueOrNull;
-                  final currentCredits = creditState?.creditBalance ?? 0;
-                  if (currentCredits < CreditConstants.deficiencyAnalysisCost) {
-                    await showNotEnoughCreditsDialog(
-                      context: context,
-                      ref: ref,
-                      requiredCredits: CreditConstants.deficiencyAnalysisCost,
-                      currentCredits: currentCredits,
-                      featureName: 'deficiency analysis',
-                    );
-                    return;
-                  }
-                  ref.read(deficiencyAnalysisProvider.notifier).runAnalysis();
-                },
-                child: const Text('Try Again 🔮'),
-              ),
+            AppErrorCard(
+              error: ErrorParser.parse(state.error),
+              customActionLabel: (state.requiredCredits != null && state.currentCredits != null)
+                  ? 'Watch Ad (+1 Credit)'
+                  : 'Try Again 🔮',
+              onAction: () {
+                if (state.requiredCredits != null && state.currentCredits != null) {
+                  showNotEnoughCreditsDialog(
+                    context: context,
+                    requiredCredits: state.requiredCredits!,
+                    currentCredits: state.currentCredits!,
+                    featureName: 'deficiency analysis',
+                  );
+                } else {
+                  analytics.runDeficiencyAnalysis(
+                    creditProvider: creditProvider,
+                    profileProvider: profileProvider,
+                  );
+                }
+              },
+            ),
           ] else if (state.result != null) ...[
             _buildResultsView(context, state.result!),
           ] else ...[
-            // Call to Action
             const Text(
               'Your eating logs contain critical clues about your micronutrient health. Let NutesiaAI scan your nutritional timelines to predict potential vitamin/mineral deficiencies and symptoms.',
               style: TextStyle(
                   color: AppTheme.textSecondary, fontSize: 12, height: 1.4),
             ),
-            const Gap(16),
+            const Gap(20),
             ElevatedButton(
-              onPressed: () async {
-                final creditState = ref.read(creditProvider).valueOrNull;
-                final currentCredits = creditState?.creditBalance ?? 0;
-                if (currentCredits < CreditConstants.deficiencyAnalysisCost) {
-                  await showNotEnoughCreditsDialog(
-                    context: context,
-                    ref: ref,
-                    requiredCredits: CreditConstants.deficiencyAnalysisCost,
-                    currentCredits: currentCredits,
-                    featureName: 'deficiency analysis',
-                  );
-                  return;
-                }
-                ref.read(deficiencyAnalysisProvider.notifier).runAnalysis();
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
+              onPressed: () => analytics.runDeficiencyAnalysis(
+                creditProvider: creditProvider,
+                profileProvider: profileProvider,
               ),
-              child: Text('Run $periodStr AI Deficiency Scan 🔮'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text('Run $periodStr Diagnostic Scan 🔮'),
             ),
           ],
         ],
@@ -720,20 +560,23 @@ class AnalyticsScreen extends ConsumerWidget {
   Widget _buildLoadingState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
           children: [
-            const CircularProgressIndicator(color: AppTheme.primary),
+            const SkeuoRadar(),
             const Gap(16),
-            Text(
-              'Running Clinical Model...',
+            const Text(
+              'SCANNING TIMELINE...',
               style: TextStyle(
-                  color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                  color: AppTheme.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  letterSpacing: 1.2),
             ),
             const Gap(4),
-            Text(
+            const Text(
               'Scanning micronutrient intake patterns...',
-              style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
             )
                 .animate(onPlay: (c) => c.repeat(reverse: true))
                 .fadeOut(duration: 1000.ms),
@@ -759,7 +602,6 @@ class AnalyticsScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Risk level header
         Row(
           children: [
             const Text('Deficiency Risk Level: ',
@@ -782,7 +624,6 @@ class AnalyticsScreen extends ConsumerWidget {
           ],
         ),
         const Gap(12),
-        // Clinical summary
         Text(
           summary,
           style: const TextStyle(
@@ -791,27 +632,57 @@ class AnalyticsScreen extends ConsumerWidget {
         const Gap(16),
         const Divider(),
         const Gap(12),
-
-        // Deficiencies list
         if (deficienciesList.isNotEmpty) ...[
           const Text('Predicted Gaps & Risks',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           const Gap(10),
           ...deficienciesList.map((d) {
             final def = d as Map<String, dynamic>;
-            final nutrient = def['nutrient'] as String? ?? '';
-            final prob = def['probability'] as String? ?? 'Moderate';
-            final explanation = def['explanation'] as String? ?? '';
+            final nutrient = def['nutrient']?.toString() ?? '';
+            final rawProb = def['probability'];
+            String prob = 'Moderate';
+            double? numericProb;
+            if (rawProb is num) {
+              numericProb = rawProb.toDouble();
+              if (numericProb <= 1.0) {
+                prob = '${(numericProb * 100).toStringAsFixed(0)}%';
+              } else {
+                prob = '${numericProb.toStringAsFixed(0)}%';
+              }
+            } else if (rawProb is String) {
+              prob = rawProb;
+              final parsed = double.tryParse(rawProb.replaceAll('%', ''));
+              if (parsed != null) {
+                numericProb = parsed;
+                if (!rawProb.contains('%')) {
+                  if (numericProb <= 1.0) {
+                    prob = '${(numericProb * 100).toStringAsFixed(0)}%';
+                  } else {
+                    prob = '${numericProb.toStringAsFixed(0)}%';
+                  }
+                }
+              }
+            }
+            final explanation = def['explanation']?.toString() ?? '';
             final symptoms = (def['symptoms'] as List<dynamic>?)
                     ?.map((s) => s.toString())
                     .toList() ??
                 [];
 
             Color probColor = AppTheme.primary;
-            if (prob.toLowerCase() == 'high') {
-              probColor = AppTheme.error;
-            } else if (prob.toLowerCase() == 'moderate') {
-              probColor = AppTheme.warning;
+            if (numericProb != null) {
+              final checkVal = numericProb > 1.0 ? numericProb / 100.0 : numericProb;
+              if (checkVal >= 0.7) {
+                probColor = AppTheme.error;
+              } else if (checkVal >= 0.4) {
+                probColor = AppTheme.warning;
+              }
+            } else {
+              if (prob.toLowerCase() == 'high') {
+                probColor = AppTheme.error;
+              } else if (prob.toLowerCase() == 'moderate') {
+                probColor = AppTheme.warning;
+              }
             }
 
             return Container(
@@ -881,8 +752,6 @@ class AnalyticsScreen extends ConsumerWidget {
           }),
           const Gap(10),
         ],
-
-        // Recommendations list
         if (recommendations.isNotEmpty) ...[
           const Divider(),
           const Gap(12),
@@ -954,5 +823,5 @@ class _MicroItem {
 
   _MicroItem(this.name, this.avg, this.target, this.unit);
 
-  double get pct => target > 0 ? avg / target : 0.0;
+  double get pct => target > 0 ? (avg / target).clamp(0.0, 1.0) : 0.0;
 }

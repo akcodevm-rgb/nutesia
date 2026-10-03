@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:uuid/uuid.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/date_utils.dart';
-import '../../../core/services/device_service.dart';
 import '../../../shared/models/food_entry_model.dart';
-import '../../../shared/models/nutrition_model.dart';
 import '../../../shared/widgets/glass_card.dart';
-import '../providers/food_log_provider.dart';
+import '../providers/confirm_food_provider.dart';
 import '../../home/providers/home_provider.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../shared/widgets/error_views/error_views.dart';
 
-
-class ConfirmFoodScreen extends ConsumerStatefulWidget {
+class ConfirmFoodScreen extends StatelessWidget {
   final String rawInput;
   final String mealType;
 
@@ -26,223 +22,168 @@ class ConfirmFoodScreen extends ConsumerStatefulWidget {
     required this.mealType,
   });
 
-  @override
-  ConsumerState<ConfirmFoodScreen> createState() =>
-      _ConfirmFoodScreenState();
-}
+  Future<void> _save(BuildContext context) async {
+    final confirmFood = context.read<ConfirmFoodProvider>();
+    final home = context.read<HomeProvider>();
 
-class _ConfirmFoodScreenState extends ConsumerState<ConfirmFoodScreen> {
-  late List<FoodItem> _editableFoods;
-  bool _isSaving = false;
+    final success = await confirmFood.save(
+      mealType: mealType,
+      rawInput: rawInput,
+      homeProvider: home,
+    );
 
-  @override
-  void initState() {
-    super.initState();
-    final parsed = ref.read(parsedFoodProvider).valueOrNull;
-    _editableFoods = parsed?.foods.map((f) => FoodItem(
-          name: f.name,
-          quantity: f.quantity,
-          unit: f.unit,
-          baseQuantity: f.baseQuantity,
-          baseNutrition: f.baseNutrition,
-        )).toList() ?? [];
-  }
-
-  NutritionData get _totalNutrition {
-    NutritionData total = const NutritionData();
-    for (final f in _editableFoods) {
-      total = total + f.nutrition;
-    }
-    return total;
-  }
-
-  Future<void> _save() async {
-    setState(() => _isSaving = true);
-    try {
-      final deviceId = await DeviceService.getDeviceId();
-      final explanation = ref.read(parsedFoodProvider).valueOrNull?.explanation ?? '';
-
-      final entry = FoodEntry(
-        id: const Uuid().v4(),
-        deviceId: deviceId,
-        date: AppDateUtils.todayKey(),
-        mealType: widget.mealType,
-        foods: _editableFoods,
-        totalNutrition: _totalNutrition,
-        explanation: explanation,
-        rawInput: widget.rawInput,
-        loggedAt: DateTime.now(),
+    if (success && context.mounted) {
+      AppToast.showSuccess(context, '$mealType logged successfully!');
+      // Pop both ConfirmScreen and AddFoodScreen
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
+    } else if (confirmFood.errorMessage != null && context.mounted) {
+      AppToast.showError(
+        context,
+        confirmFood.errorMessage!,
+        onAction: () => _save(context),
       );
-
-      await ref.read(foodEntriesProvider.notifier).addEntry(entry);
-
-      // Log each food item added
-      for (final food in _editableFoods) {
-        await AnalyticsService.instance.logFoodItemAdded(
-          foodName: food.name,
-          calories: food.nutrition.calories,
-          mealType: widget.mealType,
-        );
-      }
-
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle_rounded,
-                    color: AppTheme.primary, size: 18),
-                const Gap(8),
-                Text('${widget.mealType} logged successfully!'),
-              ],
-            ),
-          ),
-        );
-        // Pop both ConfirmScreen and AddFoodScreen
-        Navigator.of(context).pop();
-        Navigator.of(context).pop();
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final parsed = ref.watch(parsedFoodProvider).valueOrNull;
-    final total = _totalNutrition;
-
-    // Log screen view
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AnalyticsService.instance.logScreenView('confirm_food_screen');
     });
 
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: const Text('Confirm & Log'),
-        actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _save,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppTheme.primary),
-                  )
-                : const Text('Log',
-                    style: TextStyle(
-                        color: AppTheme.primary,
-                        fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Total summary bar ────────────────────────────
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                border: Border(
-                    bottom: BorderSide(color: AppTheme.cardBorder, width: 1)),
+    return Consumer<ConfirmFoodProvider>(
+      builder: (context, confirmFood, _) {
+        final total = confirmFood.totalNutrition;
+        final foods = confirmFood.editableFoods;
+        final isSaving = confirmFood.isSaving;
+
+        return Scaffold(
+          backgroundColor: AppTheme.background,
+          appBar: AppBar(
+            title: const Text('Confirm & Log'),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => _save(context),
+                child: isSaving
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppTheme.primary),
+                      )
+                    : const Text('Log',
+                        style: TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w700)),
               ),
-              child: Row(
-                children: [
-                  _TotalChip(
-                      label: 'Cal',
-                      value: total.calories.round(),
-                      color: AppTheme.calColor),
-                  const Gap(16),
-                  _TotalChip(
-                      label: 'P',
-                      value: total.protein.round(),
-                      color: AppTheme.proteinColor,
-                      suffix: 'g'),
-                  const Gap(16),
-                  _TotalChip(
-                      label: 'C',
-                      value: total.carbs.round(),
-                      color: AppTheme.carbsColor,
-                      suffix: 'g'),
-                  const Gap(16),
-                  _TotalChip(
-                      label: 'F',
-                      value: total.fat.round(),
-                      color: AppTheme.fatColor,
-                      suffix: 'g'),
-                  const Spacer(),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.mealColor(widget.mealType).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      widget.mealType,
-                      style: TextStyle(
-                        color: AppTheme.mealColor(widget.mealType),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+            ],
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // ── Total summary bar ────────────────────────────
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.surface,
+                    border: Border(
+                        bottom: BorderSide(color: AppTheme.cardBorder, width: 1)),
+                  ),
+                  child: Row(
+                    children: [
+                      _TotalChip(
+                          label: 'Cal',
+                          value: total.calories.round(),
+                          color: AppTheme.calColor),
+                      const Gap(16),
+                      _TotalChip(
+                          label: 'P',
+                          value: total.protein.round(),
+                          color: AppTheme.proteinColor,
+                          suffix: 'g'),
+                      const Gap(16),
+                      _TotalChip(
+                          label: 'C',
+                          value: total.carbs.round(),
+                          color: AppTheme.carbsColor,
+                          suffix: 'g'),
+                      const Gap(16),
+                      _TotalChip(
+                          label: 'F',
+                          value: total.fat.round(),
+                          color: AppTheme.fatColor,
+                          suffix: 'g'),
+                      const Spacer(),
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.mealColor(mealType).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          mealType,
+                          style: TextStyle(
+                            color: AppTheme.mealColor(mealType),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+
+                // ── Food item list ───────────────────────────────
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: foods.length + 1,
+                    separatorBuilder: (_, _) => const Gap(12),
+                    itemBuilder: (ctx, i) {
+                      if (i == foods.length) {
+                        // AI Explanation card
+                        return confirmFood.explanation.isNotEmpty
+                            ? _ExplanationCard(explanation: confirmFood.explanation)
+                                .animate()
+                                .fadeIn(delay: (i * 60 + 200).ms)
+                            : const SizedBox.shrink();
+                      }
+                      final food = foods[i];
+                      return _EditableFoodCard(
+                        key: ValueKey('${food.name}_$i'),
+                        food: food,
+                        index: i,
+                        onQuantityChanged: (qty) =>
+                            confirmFood.updateQuantity(i, qty),
+                        onUnitChanged: (unit) =>
+                            confirmFood.updateUnit(i, unit),
+                        onRemove: foods.length > 1
+                            ? () => confirmFood.removeItem(i)
+                            : null,
+                      ).animate(delay: (i * 80).ms).fadeIn().slideX(begin: 0.2);
+                    },
+                  ),
+                ),
+
+                // ── Log button ───────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isSaving ? null : () => _save(context),
+                      icon: const Icon(Icons.check_rounded, size: 20),
+                      label: const Text('Log This Meal'),
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            // ── Food item list ───────────────────────────────
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: _editableFoods.length + 1,
-                separatorBuilder: (_, _) => const Gap(12),
-                itemBuilder: (ctx, i) {
-                  if (i == _editableFoods.length) {
-                    // AI Explanation card
-                    return parsed?.explanation != null
-                        ? _ExplanationCard(explanation: parsed!.explanation)
-                            .animate()
-                            .fadeIn(delay: (i * 60 + 200).ms)
-                        : const SizedBox.shrink();
-                  }
-                  final food = _editableFoods[i];
-                  return _EditableFoodCard(
-                    food: food,
-                    index: i,
-                    onQuantityChanged: (qty) {
-                      setState(() => _editableFoods[i].quantity = qty);
-                    },
-                    onUnitChanged: (unit) {
-                      setState(() => _editableFoods[i].unit = unit);
-                    },
-                    onRemove: _editableFoods.length > 1
-                        ? () => setState(() => _editableFoods.removeAt(i))
-                        : null,
-                  ).animate(delay: (i * 80).ms).fadeIn().slideX(begin: 0.2);
-                },
-              ),
-            ),
-
-            // ── Log button ───────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isSaving ? null : _save,
-                  icon: const Icon(Icons.check_rounded, size: 20),
-                  label: const Text('Log This Meal'),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -257,6 +198,7 @@ class _EditableFoodCard extends StatefulWidget {
   final VoidCallback? onRemove;
 
   const _EditableFoodCard({
+    super.key,
     required this.food,
     required this.index,
     required this.onQuantityChanged,
@@ -280,6 +222,20 @@ class _EditableFoodCardState extends State<_EditableFoodCard> {
           ? qty.round().toString()
           : qty.toStringAsFixed(1),
     );
+  }
+
+  @override
+  void didUpdateWidget(_EditableFoodCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.food.quantity != widget.food.quantity) {
+      final qty = widget.food.quantity;
+      final text = qty == qty.roundToDouble()
+          ? qty.round().toString()
+          : qty.toStringAsFixed(1);
+      if (_qtyController.text != text) {
+        _qtyController.text = text;
+      }
+    }
   }
 
   @override
@@ -374,8 +330,9 @@ class _EditableFoodCardState extends State<_EditableFoodCard> {
               // Unit dropdown
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  key: ValueKey(widget.food.unit),
-                  initialValue: AppConstants.foodUnits.contains(widget.food.unit)
+                  // `value` keeps the field in sync with provider state; `initialValue` is read once.
+                  // ignore: deprecated_member_use
+                  value: AppConstants.foodUnits.contains(widget.food.unit)
                       ? widget.food.unit
                       : AppConstants.foodUnits.first,
                   dropdownColor: AppTheme.surface,
@@ -483,7 +440,7 @@ class _TotalChip extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+            style: const TextStyle(color: AppTheme.textMuted, fontSize: 10)),
         Text(
           '$value$suffix',
           style: TextStyle(

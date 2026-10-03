@@ -1,0 +1,124 @@
+[
+  {
+    "description": "Infant 1 year old - Age < 2 Unsupported",
+    "input": {
+      "age": 1,
+      "gender": "male",
+      "heightCm": 75.0,
+      "weightKg": 10.0,
+      "activityLevel": "lightly_active",
+      "goal": "healthy_growth"
+    },
+    "expectedSafetyStatus": "UNSUPPORTED",
+    "expectedCalcStatus": "NOT_CALCULATED",
+    "shouldHaveTargets": false
+  },
+  {
+    "description": "Toddler exactly 2 years old - Schofield Toddler Track",
+    "input": {
+      "age": 2,
+      "gender": "female",
+      "heightCm": 86.0,
+      "weightKg": 12.5,
+      "activityLevel": "lightly_active",
+      "goal": "healthy_growth"
+    },
+    "expectedSafetyStatus": "SAFE",
+    "expectedCalcStatus": "CALCULATED",
+    "shouldHaveTargets": true,
+    "expectedMinCalories": 1000.0,
+    "expectedMaxCalories": 1300.0
+  },
+  {
+    "description": "Child 8 years old - Schofield Child Track",
+    "input": {
+      "age": 8,
+      "gender": "male",
+      "heightCm": 128.0,
+      "weightKg": 25.0,
+      "activityLevel": "moderately_active",
+      "goal": "healthy_growth"
+    },
+    "expectedSafetyStatus": "SAFE",
+    "expectedCalcStatus": "CALCULATED",
+    "shouldHaveTargets": true,
+    "expectedMinCalories": 1500.0,
+    "expectedMaxCalories": 1900.0
+  },
+  {
+    "description": "Adolescent with weight_loss goal - Calorie Deficit Rejected",
+    "input": {
+      "age": 14,
+      "gender": "female",
+      "heightCm": 160.0,
+      "weightKg": 65.0,
+      "activityLevel": "sedentary",
+      "goal": "weight_loss"
+    },
+    "expectedSafetyStatus": "PROFESSIONAL_REVIEW",
+    "expectedCalcStatus": "NOT_CALCULATED",
+    "shouldHaveTargets": false
+  },
+  {
+    "description": "Adult Pregnant User - Explicitly Unsupported",
+    "input": {
+      "age": 28,
+      "gender": "female",
+      "heightCm": 165.0,
+      "weightKg": 62.0,
+      "activityLevel": "lightly_active",
+      "goal": "maintain_weight",
+      "pregnancyStatus": "trimester2"
+    },
+    "expectedSafetyStatus": "UNSUPPORTED",
+    "expectedCalcStatus": "NOT_CALCULATED",
+    "shouldHaveTargets": false
+  },
+  {
+    "description": "Adult Breastfeeding User - Requires Professional Review",
+    "input": {
+      "age": 30,
+      "gender": "female",
+      "heightCm": 168.0,
+      "weightKg": 64.0,
+      "activityLevel": "moderately_active",
+      "goal": "maintain_weight",
+      "breastfeedingStatus": "exclusive"
+    },
+    "expectedSafetyStatus": "PROFESSIONAL_REVIEW",
+    "expectedCalcStatus": "NOT_CALCULATED",
+    "shouldHaveTargets": false
+  },
+  {
+    "description": "Adult Male Standard Maintenance - Mifflin-St Jeor",
+    "input": {
+      "age": 32,
+      "gender": "male",
+      "heightCm": 178.0,
+      "weightKg": 78.0,
+      "activityLevel": "moderately_active",
+      "goal": "maintain_weight"
+    },
+    "expectedSafetyStatus": "SAFE",
+    "expectedCalcStatus": "CALCULATED",
+    "shouldHaveTargets": true,
+    "expectedMinCalories": 2400.0,
+    "expectedMaxCalories": 2850.0
+  },
+  {
+    "description": "Adult Female Weight Loss - Mifflin-St Jeor Deficit & Floor Check",
+    "input": {
+      "age": 26,
+      "gender": "female",
+      "heightCm": 155.0,
+      "weightKg": 48.0,
+      "activityLevel": "sedentary",
+      "goal": "weight_loss"
+    },
+    "expectedSafetyStatus": "WARNING",
+    "expectedCalcStatus": "CALCULATED",
+    "shouldHaveTargets": true,
+    "expectedMinCalories": 1200.0,
+    "expectedMaxCalories": 1200.0
+  }
+]

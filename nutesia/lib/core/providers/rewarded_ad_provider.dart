@@ -1,70 +1,59 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:flutter/foundation.dart';
 import '../services/rewarded_ad_service.dart';
 
-class RewardedAdState {
-  final bool isLoading;
-  final bool isReady;
-  final String? error;
-
-  const RewardedAdState({
-    this.isLoading = false,
-    this.isReady = false,
-    this.error,
-  });
-
-  RewardedAdState copyWith({
-    bool? isLoading,
-    bool? isReady,
-    String? error,
-  }) {
-    return RewardedAdState(
-      isLoading: isLoading ?? this.isLoading,
-      isReady: isReady ?? this.isReady,
-      error: error,
-    );
-  }
-}
-
-final rewardedAdProvider =
-    StateNotifierProvider<RewardedAdNotifier, RewardedAdState>((ref) {
-  return RewardedAdNotifier(RewardedAdService());
-});
-
-class RewardedAdNotifier extends StateNotifier<RewardedAdState> {
+class RewardedAdProvider extends ChangeNotifier {
   final RewardedAdService _service;
+  bool _isLoading = false;
+  bool _isReady = false;
+  String? _error;
 
-  RewardedAdNotifier(this._service) : super(const RewardedAdState()) {
+  RewardedAdProvider({RewardedAdService? service})
+      : _service = service ?? RewardedAdService() {
     load();
   }
 
+  bool get isLoading => _isLoading;
+  bool get isReady => _isReady;
+  String? get error => _error;
+
   Future<void> load() async {
-    if (_service.isLoading || _service.isReady) return;
-    state = state.copyWith(isLoading: true, error: null);
+    if (_service.isLoading || _service.isReady) {
+      _isReady = _service.isReady;
+      return;
+    }
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
     try {
       await _service.load();
-      if (mounted) {
-        state = RewardedAdState(isReady: _service.isReady);
-      }
+      _isReady = _service.isReady;
+      _isLoading = false;
+      notifyListeners();
     } catch (e) {
-      if (mounted) {
-        state = RewardedAdState(error: e.toString());
-      }
+      _error = e.toString();
+      _isLoading = false;
+      _isReady = false;
+      notifyListeners();
     }
   }
 
   Future<bool> show() async {
-    state = state.copyWith(isLoading: true, error: null);
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
     try {
       final earned = await _service.show();
-      if (mounted) {
-        state = RewardedAdState(isReady: _service.isReady);
-      }
+      _isReady = _service.isReady;
+      _isLoading = false;
+      notifyListeners();
       return earned;
     } catch (e) {
-      if (mounted) {
-        state = RewardedAdState(error: e.toString());
-      }
+      _error = e.toString();
+      _isLoading = false;
+      _isReady = false;
+      notifyListeners();
       return false;
     }
   }

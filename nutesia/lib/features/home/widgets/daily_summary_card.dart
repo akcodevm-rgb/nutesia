@@ -32,7 +32,7 @@ class DailySummaryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Daily Calories',
+                    const Text('Daily Calories',
                         style: TextStyle(
                             color: AppTheme.textSecondary, fontSize: 13)),
                     const Gap(4),
@@ -41,7 +41,7 @@ class DailySummaryCard extends StatelessWidget {
                         children: [
                           TextSpan(
                             text: '${consumed.calories.round()}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.calColor,
@@ -50,7 +50,7 @@ class DailySummaryCard extends StatelessWidget {
                           ),
                           TextSpan(
                             text: ' / ${targets.calories.round()} kcal',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
                               color: AppTheme.textSecondary,
                             ),
@@ -118,7 +118,7 @@ class _CaloriePctBadge extends StatelessWidget {
       child: Center(
         child: Text(
           '${(pct * 100).round()}%',
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
             color: AppTheme.calColor,
@@ -195,7 +195,7 @@ class _MacroMini extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
             const Gap(4),
             RichText(
               text: TextSpan(

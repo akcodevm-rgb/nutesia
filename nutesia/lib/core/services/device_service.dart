@@ -5,13 +5,18 @@ class DeviceService {
   static String? _cachedId;
 
   /// Returns the current Firebase User's UID if logged in.
-  /// Falls back to a randomly generated UUID if not logged in 
-  /// (though users should be forced to login first via AuthWrapper).
+  /// Prepends 'test_' for testing/demo/QA accounts so they automatically receive unlimited credits.
+  /// Falls back to a randomly generated UUID if not logged in.
   static Future<String> getDeviceId() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      _cachedId = user.uid;
-      return user.uid;
+      final email = (user.email ?? '').toLowerCase();
+      if (email.contains('test') || email.contains('qa') || email.contains('demo') || email.contains('admin')) {
+        _cachedId = 'test_${user.uid}';
+      } else {
+        _cachedId = user.uid;
+      }
+      return _cachedId!;
     }
 
     // Fallback if somehow called when not logged in
@@ -20,6 +25,7 @@ class DeviceService {
     return _cachedId!;
   }
 
-  /// Clears the cached ID (used in tests only).
+  /// Clears the cached ID (used on logout/login).
   static void clearCache() => _cachedId = null;
 }
+

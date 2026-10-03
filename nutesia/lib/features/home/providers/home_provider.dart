@@ -1,179 +1,259 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import '../../../shared/models/food_entry_model.dart';
 import '../../../shared/models/nutrition_model.dart';
 import '../../../core/services/storage_service.dart';
-import '../../../core/services/firestore_service.dart';
+import '../../../core/services/api_data_service.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/utils/date_utils.dart';
-import '../../profile/providers/profile_provider.dart';
 
-// ─── Selected Date ─────────────────────────────────────────────────────────
-
-final selectedDateProvider = StateProvider<DateTime>((ref) => DateTime.now());
-
-// ─── Food Entries Notifier ──────────────────────────────────────────────────
-
-class FoodEntriesNotifier extends StateNotifier<AsyncValue<List<FoodEntry>>> {
+class HomeProvider extends ChangeNotifier {
   final StorageService _storage;
-  final FirestoreService _firestore;
-  String _dateKey;
+  final ApiDataService _api;
 
-  FoodEntriesNotifier(this._storage, this._firestore, this._dateKey)
-      : super(const AsyncValue.loading()) {
-    _load();
+  int _tabIndex = 0;
+  DateTime _selectedDate = DateTime.now();
+  String _activeMemberId = '';
+  List<FoodEntry> _entries = [];
+  Map<String, NutritionData> _memberSummaries = {};
+  List<String> _trackedMemberIds = [];
+  bool _isLoading = false;
+  String? _error;
+
+  HomeProvider({
+    StorageService? storage,
+    ApiDataService? api,
+  })  : _storage = storage ?? StorageService(),
+        _api = api ?? ApiDataService() {
+    loadEntries();
   }
 
-  NutritionData _calculateTotal(List<FoodEntry> entries) {
+  int get tabIndex => _tabIndex;
+  DateTime get selectedDate => _selectedDate;
+  String get activeMemberId => _activeMemberId;
+  List<FoodEntry> get entries => _entries;
+  Map<String, NutritionData> get memberSummaries => _memberSummaries;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+
+  String get dateKey => AppDateUtils.toKey(_selectedDate);
+  String get scopedDateKey => _activeMemberId.isNotEmpty ? "${_activeMemberId}_$dateKey" : dateKey;
+
+  NutritionData get dailySummary {
     NutritionData total = const NutritionData();
-    for (final entry in entries) {
+    for (final entry in _entries) {
       total = total + entry.totalNutrition;
     }
     return total;
   }
 
-  Future<void> _load() async {
-    try {
-      // 1. Load from local cache first (instant response)
-      final localEntries = await _storage.getEntriesForDate(_dateKey);
+  NutritionData getMemberDailySummary(String memberId) {
+    if (memberId == _activeMemberId || memberId.isEmpty) {
+      return dailySummary;
+    }
+    return _memberSummaries[memberId] ?? const NutritionData();
+  }
+
+  void setTabIndex(int index) {
+    if (_tabIndex != index) {
+      _tabIndex = index;
+      notifyListeners();
+    }
+  }
+
+  void setSelectedDate(DateTime date) {
+    if (_selectedDate != date) {
+      _selectedDate = date;
+      notifyListeners();
+      loadEntries();
+      if (_trackedMemberIds.isNotEmpty) {
+        loadMemberSummaries(_trackedMemberIds);
+      }
+    }
+  }
+
+  void updateActiveMember(String memberId) {
+    if (_activeMemberId != memberId) {
+      _activeMemberId = memberId;
+      notifyListeners();
+      loadEntries();
+      if (_trackedMemberIds.isNotEmpty) {
+        loadMemberSummaries(_trackedMemberIds);
+      }
+    }
+  }
+
+  Future<void> loadMemberSummaries(List<String> memberIds) async {
+    _trackedMemberIds = memberIds;
+    final Map<String, NutritionData> updatedSummaries = Map.from(_memberSummaries);
+
+    for (final mId in memberIds) {
+      if (mId.isEmpty || mId == _activeMemberId) {
+        continue;
+      }
+      final key = "${mId}_$dateKey";
+      // 1. Read local cache
+      final localEntries = await _storage.getEntriesForDate(key);
       if (localEntries.isNotEmpty) {
-        state = AsyncValue.data(localEntries);
+        updatedSummaries[mId] = _calculateTotal(localEntries);
+      } else {
+        updatedSummaries[mId] = const NutritionData();
+      }
+    }
+    _memberSummaries = updatedSummaries;
+    notifyListeners();
+
+    // 2. Fetch from API in background
+    try {
+      final deviceId = await DeviceService.getDeviceId();
+      for (final mId in memberIds) {
+        if (mId.isEmpty || mId == _activeMemberId) continue;
+        try {
+          final cloudEntries = await _api.getEntriesForDate(
+            deviceId,
+            dateKey,
+            memberId: mId,
+          );
+          if (cloudEntries.isNotEmpty) {
+            final key = "${mId}_$dateKey";
+            await _storage.overwriteEntriesForDate(key, cloudEntries);
+            updatedSummaries[mId] = _calculateTotal(cloudEntries);
+          }
+        } catch (_) {}
+      }
+      _memberSummaries = Map.from(updatedSummaries);
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  NutritionData _calculateTotal(List<FoodEntry> entriesList) {
+    NutritionData total = const NutritionData();
+    for (final entry in entriesList) {
+      total = total + entry.totalNutrition;
+    }
+    return total;
+  }
+
+  Future<void> loadEntries() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // 1. Load from local cache first
+      final localEntries = await _storage.getEntriesForDate(scopedDateKey);
+      if (localEntries.isNotEmpty) {
+        _entries = localEntries;
+        _isLoading = false;
+        notifyListeners();
       }
 
-      // 2. Fetch from Firestore to sync
+      // 2. Fetch from API with memberId scoping
       final deviceId = await DeviceService.getDeviceId();
-      final cloudEntries = await _firestore.getEntriesForDate(deviceId, _dateKey);
+      final cloudEntries = await _api.getEntriesForDate(
+        deviceId,
+        dateKey,
+        memberId: _activeMemberId,
+      );
 
       if (cloudEntries.isNotEmpty) {
-        // Sync local cache with Firestore entries
-        await _storage.overwriteEntriesForDate(_dateKey, cloudEntries);
-        state = AsyncValue.data(cloudEntries);
+        await _storage.overwriteEntriesForDate(scopedDateKey, cloudEntries);
+        _entries = cloudEntries;
       } else if (localEntries.isNotEmpty) {
-        // Local has data but cloud is empty (e.g. user logged offline), sync to cloud
         final dailyTotal = _calculateTotal(localEntries);
-        await _firestore.saveDailyLog(
+        final waterMl = await _storage.getWaterIntakeForDate(scopedDateKey);
+        await _api.saveDailyLog(
           deviceId: deviceId,
-          dateKey: _dateKey,
+          dateKey: dateKey,
           entries: localEntries,
           dailyTotal: dailyTotal,
+          memberId: _activeMemberId,
+          waterIntakeMl: waterMl,
         );
       } else {
-        // Both empty
-        state = const AsyncValue.data([]);
+        _entries = [];
       }
-    } catch (e, st) {
-      if (state.hasValue) {
-        log('FoodEntriesNotifier._load: Offline/Sync failed, using cached data: $e');
-      } else {
-        state = AsyncValue.error(e, st);
-      }
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('ℹ️ [HomeProvider.loadEntries] Using local state or offline: $e');
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<void> addEntry(FoodEntry entry) async {
-    // 1. Save locally
     await _storage.saveFoodEntry(entry);
-    
-    final current = state.valueOrNull ?? [];
-    final updated = [...current, entry]
-      ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
-    state = AsyncValue.data(updated);
 
-    // 2. Sync consolidated day to Firestore
+    final updated = [..._entries, entry]
+      ..sort((a, b) => a.loggedAt.compareTo(b.loggedAt));
+    _entries = updated;
+    notifyListeners();
+
     try {
       final deviceId = await DeviceService.getDeviceId();
       final dailyTotal = _calculateTotal(updated);
-      await _firestore.saveDailyLog(
+      final waterMl = await _storage.getWaterIntakeForDate(scopedDateKey);
+      await _api.saveDailyLog(
         deviceId: deviceId,
-        dateKey: _dateKey,
+        dateKey: dateKey,
         entries: updated,
         dailyTotal: dailyTotal,
+        memberId: _activeMemberId,
+        waterIntakeMl: waterMl,
       );
     } catch (e) {
-      log('FoodEntriesNotifier.addEntry: Firestore sync failed: $e');
+      log('HomeProvider.addEntry: API sync failed: $e');
     }
   }
 
   Future<void> updateEntry(FoodEntry entry) async {
-    // 1. Save locally
     await _storage.updateFoodEntry(entry);
-    
-    final current = state.valueOrNull ?? [];
-    final updated = current.map((e) => e.id == entry.id ? entry : e).toList();
-    state = AsyncValue.data(updated);
 
-    // 2. Sync consolidated day to Firestore
+    final updated = _entries.map((e) => e.id == entry.id ? entry : e).toList();
+    _entries = updated;
+    notifyListeners();
+
     try {
       final deviceId = await DeviceService.getDeviceId();
       final dailyTotal = _calculateTotal(updated);
-      await _firestore.saveDailyLog(
+      final waterMl = await _storage.getWaterIntakeForDate(scopedDateKey);
+      await _api.saveDailyLog(
         deviceId: deviceId,
-        dateKey: _dateKey,
+        dateKey: dateKey,
         entries: updated,
         dailyTotal: dailyTotal,
+        memberId: _activeMemberId,
+        waterIntakeMl: waterMl,
       );
     } catch (e) {
-      log('FoodEntriesNotifier.updateEntry: Firestore sync failed: $e');
+      log('HomeProvider.updateEntry: API sync failed: $e');
     }
   }
 
   Future<void> deleteEntry(String entryId) async {
-    // 1. Save locally
     await _storage.deleteFoodEntry(entryId);
-    
-    final current = state.valueOrNull ?? [];
-    final updated = current.where((e) => e.id != entryId).toList();
-    state = AsyncValue.data(updated);
 
-    // 2. Sync consolidated day to Firestore
+    final updated = _entries.where((e) => e.id != entryId).toList();
+    _entries = updated;
+    notifyListeners();
+
     try {
       final deviceId = await DeviceService.getDeviceId();
       final dailyTotal = _calculateTotal(updated);
-      await _firestore.saveDailyLog(
+      final waterMl = await _storage.getWaterIntakeForDate(scopedDateKey);
+      await _api.saveDailyLog(
         deviceId: deviceId,
-        dateKey: _dateKey,
+        dateKey: dateKey,
         entries: updated,
         dailyTotal: dailyTotal,
+        memberId: _activeMemberId,
+        waterIntakeMl: waterMl,
       );
     } catch (e) {
-      log('FoodEntriesNotifier.deleteEntry: Firestore sync failed: $e');
+      log('HomeProvider.deleteEntry: API sync failed: $e');
     }
   }
 
-  void changeDate(String dateKey) {
-    _dateKey = dateKey;
-    _load();
-  }
-
-  Future<void> refresh() => _load();
+  Future<void> refresh() => loadEntries();
 }
-
-final foodEntriesProvider = StateNotifierProvider.autoDispose<FoodEntriesNotifier, AsyncValue<List<FoodEntry>>>((ref) {
-  final date = ref.watch(selectedDateProvider);
-  return FoodEntriesNotifier(
-    ref.read(storageServiceProvider),
-    ref.read(firestoreServiceProvider),
-    AppDateUtils.toKey(date),
-  );
-});
-
-
-// ─── Daily Nutrition Summary (derived) ─────────────────────────────────────
-
-final dailySummaryProvider = Provider.autoDispose<NutritionData>((ref) {
-  final entriesAsync = ref.watch(foodEntriesProvider);
-  return entriesAsync.whenData((entries) {
-    NutritionData total = const NutritionData();
-    for (final entry in entries) {
-      total = total + entry.totalNutrition;
-    }
-    return total;
-  }).valueOrNull ?? const NutritionData();
-});
-
-// ─── Target Calories (from profile) ────────────────────────────────────────
-
-final dailyTargetsProvider = Provider.autoDispose<NutritionData?>((ref) {
-  final profileAsync = ref.watch(userProfileProvider);
-  return profileAsync.valueOrNull?.dailyTargets;
-});

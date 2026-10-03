@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/models/nutrition_model.dart';
 import '../../../shared/widgets/glass_card.dart';
+import '../providers/micro_section_provider.dart';
 
-class MicroSection extends StatefulWidget {
+class MicroSection extends StatelessWidget {
   final NutritionData consumed;
   final NutritionData targets;
 
@@ -15,70 +17,65 @@ class MicroSection extends StatefulWidget {
   });
 
   @override
-  State<MicroSection> createState() => _MicroSectionState();
-}
-
-class _MicroSectionState extends State<MicroSection> {
-  bool _vitaminsExpanded = false;
-  bool _mineralsExpanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _ExpandableGroup(
-          title: 'Vitamins',
-          icon: Icons.sunny,
-          iconColor: const Color(0xFFFFD93D),
-          expanded: _vitaminsExpanded,
-          onToggle: () => setState(() => _vitaminsExpanded = !_vitaminsExpanded),
+    return Consumer<MicroSectionProvider>(
+      builder: (context, microProvider, _) {
+        return Column(
           children: [
-            _MicroRow('Vitamin A', widget.consumed.vitamins.vitaminA,
-                widget.targets.vitamins.vitaminA, 'mcg'),
-            _MicroRow('Vitamin B1', widget.consumed.vitamins.vitaminB1,
-                widget.targets.vitamins.vitaminB1, 'mg'),
-            _MicroRow('Vitamin B6', widget.consumed.vitamins.vitaminB6,
-                widget.targets.vitamins.vitaminB6, 'mg'),
-            _MicroRow('Vitamin B12', widget.consumed.vitamins.vitaminB12,
-                widget.targets.vitamins.vitaminB12, 'mcg'),
-            _MicroRow('Vitamin C', widget.consumed.vitamins.vitaminC,
-                widget.targets.vitamins.vitaminC, 'mg'),
-            _MicroRow('Vitamin D', widget.consumed.vitamins.vitaminD,
-                widget.targets.vitamins.vitaminD, 'mcg'),
-            _MicroRow('Vitamin E', widget.consumed.vitamins.vitaminE,
-                widget.targets.vitamins.vitaminE, 'mg'),
-            _MicroRow('Vitamin K', widget.consumed.vitamins.vitaminK,
-                widget.targets.vitamins.vitaminK, 'mcg'),
-            _MicroRow('Folate', widget.consumed.vitamins.folate,
-                widget.targets.vitamins.folate, 'mcg'),
+            _ExpandableGroup(
+              title: 'Vitamins',
+              icon: Icons.sunny,
+              iconColor: const Color(0xFFFFD93D),
+              expanded: microProvider.vitaminsExpanded,
+              onToggle: () => microProvider.toggleVitamins(),
+              children: [
+                _MicroRow('Vitamin A', consumed.vitamins.vitaminA,
+                    targets.vitamins.vitaminA, 'mcg'),
+                _MicroRow('Vitamin B1', consumed.vitamins.vitaminB1,
+                    targets.vitamins.vitaminB1, 'mg'),
+                _MicroRow('Vitamin B6', consumed.vitamins.vitaminB6,
+                    targets.vitamins.vitaminB6, 'mg'),
+                _MicroRow('Vitamin B12', consumed.vitamins.vitaminB12,
+                    targets.vitamins.vitaminB12, 'mcg'),
+                _MicroRow('Vitamin C', consumed.vitamins.vitaminC,
+                    targets.vitamins.vitaminC, 'mg'),
+                _MicroRow('Vitamin D', consumed.vitamins.vitaminD,
+                    targets.vitamins.vitaminD, 'mcg'),
+                _MicroRow('Vitamin E', consumed.vitamins.vitaminE,
+                    targets.vitamins.vitaminE, 'mg'),
+                _MicroRow('Vitamin K', consumed.vitamins.vitaminK,
+                    targets.vitamins.vitaminK, 'mcg'),
+                _MicroRow('Folate', consumed.vitamins.folate,
+                    targets.vitamins.folate, 'mcg'),
+              ],
+            ),
+            const Gap(12),
+            _ExpandableGroup(
+              title: 'Minerals',
+              icon: Icons.diamond_outlined,
+              iconColor: AppTheme.info,
+              expanded: microProvider.mineralsExpanded,
+              onToggle: () => microProvider.toggleMinerals(),
+              children: [
+                _MicroRow('Calcium', consumed.minerals.calcium,
+                    targets.minerals.calcium, 'mg'),
+                _MicroRow('Iron', consumed.minerals.iron,
+                    targets.minerals.iron, 'mg'),
+                _MicroRow('Zinc', consumed.minerals.zinc,
+                    targets.minerals.zinc, 'mg'),
+                _MicroRow('Magnesium', consumed.minerals.magnesium,
+                    targets.minerals.magnesium, 'mg'),
+                _MicroRow('Potassium', consumed.minerals.potassium,
+                    targets.minerals.potassium, 'mg'),
+                _MicroRow('Sodium', consumed.minerals.sodium,
+                    targets.minerals.sodium, 'mg'),
+                _MicroRow('Phosphorus', consumed.minerals.phosphorus,
+                    targets.minerals.phosphorus, 'mg'),
+              ],
+            ),
           ],
-        ),
-        const Gap(12),
-        _ExpandableGroup(
-          title: 'Minerals',
-          icon: Icons.diamond_outlined,
-          iconColor: AppTheme.info,
-          expanded: _mineralsExpanded,
-          onToggle: () =>
-              setState(() => _mineralsExpanded = !_mineralsExpanded),
-          children: [
-            _MicroRow('Calcium', widget.consumed.minerals.calcium,
-                widget.targets.minerals.calcium, 'mg'),
-            _MicroRow('Iron', widget.consumed.minerals.iron,
-                widget.targets.minerals.iron, 'mg'),
-            _MicroRow('Zinc', widget.consumed.minerals.zinc,
-                widget.targets.minerals.zinc, 'mg'),
-            _MicroRow('Magnesium', widget.consumed.minerals.magnesium,
-                widget.targets.minerals.magnesium, 'mg'),
-            _MicroRow('Potassium', widget.consumed.minerals.potassium,
-                widget.targets.minerals.potassium, 'mg'),
-            _MicroRow('Sodium', widget.consumed.minerals.sodium,
-                widget.targets.minerals.sodium, 'mg'),
-            _MicroRow('Phosphorus', widget.consumed.minerals.phosphorus,
-                widget.targets.minerals.phosphorus, 'mg'),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 }

@@ -5,17 +5,18 @@ import '../../shared/models/food_entry_model.dart';
 import '../constants/app_constants.dart';
 
 /// Local storage service using SharedPreferences + JSON encoding.
-/// 
-/// Firebase Firestore integration:
-/// When Firebase config is provided, replace this service with FirestoreService
-/// which implements the same interface. All providers use StorageService
-/// so swapping is a single-line change per provider.
+///
+/// The remote source of truth is the Go API. This service is only an offline
+/// cache used by feature providers for immediate reads and write recovery.
 class StorageService {
   // ─── User Profile ─────────────────────────────────────────
 
   Future<void> saveUser(UserModel user) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.userProfileKey, jsonEncode(user.toJson()));
+    await prefs.setString(
+      AppConstants.userProfileKey,
+      jsonEncode(user.toJson()),
+    );
   }
 
   Future<UserModel?> getUser() async {
@@ -83,11 +84,24 @@ class StorageService {
     }
   }
 
-  Future<void> overwriteEntriesForDate(String dateKey, List<FoodEntry> newEntries) async {
+  Future<void> overwriteEntriesForDate(
+    String dateKey,
+    List<FoodEntry> newEntries,
+  ) async {
     final all = await _getAllEntries();
     all.removeWhere((e) => e.date == dateKey);
     all.addAll(newEntries);
     await _persistEntries(all);
+  }
+
+  Future<void> saveWaterIntake(String dateKey, int waterIntakeMl) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(AppConstants.waterIntakePrefixKey + dateKey, waterIntakeMl);
+  }
+
+  Future<int> getWaterIntakeForDate(String dateKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(AppConstants.waterIntakePrefixKey + dateKey) ?? 0;
   }
 
   Future<void> clearAll() async {
@@ -95,4 +109,3 @@ class StorageService {
     await prefs.clear();
   }
 }
-

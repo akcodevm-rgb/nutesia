@@ -1,4 +1,5 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart';
 
 class AnalyticsService {
   AnalyticsService._();
@@ -8,11 +9,14 @@ class AnalyticsService {
 
   /// Checks if analytics is supported on the current platform/environment.
   Future<bool> _canLog() async {
-    try {
-      return await _analytics.isSupported();
-    } catch (_) {
-      return false;
+    if (kIsWeb) {
+      try {
+        return await _analytics.isSupported();
+      } catch (_) {
+        return false;
+      }
     }
+    return true;
   }
 
   FirebaseAnalyticsObserver get observer =>

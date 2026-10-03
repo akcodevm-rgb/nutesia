@@ -1,81 +1,76 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 
+import '../errors/app_error.dart';
+import '../errors/error_parser.dart';
 import '../models/credit_state.dart';
 import '../services/credit_service.dart';
 import '../services/device_service.dart';
 
-final creditServiceProvider = Provider<CreditService>((ref) => CreditService());
-
-final deviceIdProvider =
-    FutureProvider<String>((ref) => DeviceService.getDeviceId());
-
-final creditProvider =
-    StateNotifierProvider<CreditNotifier, AsyncValue<CreditState>>((ref) {
-  return CreditNotifier(ref.read(creditServiceProvider));
-});
-
-class CreditNotifier extends StateNotifier<AsyncValue<CreditState>> {
+class CreditProvider extends ChangeNotifier {
   final CreditService _service;
-  String? _deviceId;
+  CreditState? _wallet;
+  bool _isLoading = false;
+  String? _error;
+  AppError? _appError;
 
-  CreditNotifier(this._service) : super(const AsyncValue.loading()) {
-    _init();
+  CreditProvider({CreditService? service})
+      : _service = service ?? CreditService() {
+    loadWallet();
   }
 
-  Future<void> _init() async {
+  CreditState? get wallet => _wallet;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  AppError? get appError => _appError;
+  int get creditBalance => _wallet?.creditBalance ?? 0;
+  int get dailyCredits => _wallet?.dailyCredits ?? 0;
+  int get adCredits => _wallet?.adCredits ?? 0;
+
+  Future<void> loadWallet() async {
+    _isLoading = true;
+    _error = null;
+    _appError = null;
+    notifyListeners();
+
     try {
-      _deviceId = await DeviceService.getDeviceId();
-      final stateAfterGrant =
-          await _service.grantDailyCreditsIfNeeded(_deviceId!);
-      if (mounted) state = AsyncValue.data(stateAfterGrant);
-    } catch (e, st) {
-      if (mounted) state = AsyncValue.error(e, st);
+      final deviceId = await DeviceService.getDeviceId();
+      _wallet = await _service.loadWallet(deviceId);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _appError = ErrorParser.parse(e);
+      _error = _appError!.message;
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
-  Future<String> _requireDeviceId() async {
-    _deviceId ??= await DeviceService.getDeviceId();
-    return _deviceId!;
-  }
-
   Future<void> refresh() async {
-    final deviceId = await _requireDeviceId();
-    state = AsyncValue.data(await _service.grantDailyCreditsIfNeeded(deviceId));
-  }
-
-  Future<void> spend({
-    required int amount,
-    required String reason,
-  }) async {
-    final deviceId = await _requireDeviceId();
-    final granted = await _service.grantDailyCreditsIfNeeded(deviceId);
-    if (mounted) state = AsyncValue.data(granted);
-    final updated = await _service.spendCredits(
-      deviceId: deviceId,
-      amount: amount,
-      reason: reason,
-    );
-    if (mounted) state = AsyncValue.data(updated);
-  }
-
-  Future<void> refund({
-    required int amount,
-    required String reason,
-  }) async {
-    final deviceId = await _requireDeviceId();
-    final updated = await _service.refundCredits(
-      deviceId: deviceId,
-      amount: amount,
-      reason: reason,
-    );
-    if (mounted) state = AsyncValue.data(updated);
+    try {
+      final deviceId = await DeviceService.getDeviceId();
+      _wallet = await _service.loadWallet(deviceId);
+      _error = null;
+      _appError = null;
+      notifyListeners();
+    } catch (e) {
+      _appError = ErrorParser.parse(e);
+      _error = _appError!.message;
+      notifyListeners();
+    }
   }
 
   Future<void> addRewardedAdCredit() async {
-    final deviceId = await _requireDeviceId();
-    final granted = await _service.grantDailyCreditsIfNeeded(deviceId);
-    if (mounted) state = AsyncValue.data(granted);
-    final updated = await _service.addRewardedAdCredit(deviceId);
-    if (mounted) state = AsyncValue.data(updated);
+    try {
+      final deviceId = await DeviceService.getDeviceId();
+      _wallet = await _service.addRewardedAdCredit(deviceId);
+      _error = null;
+      _appError = null;
+      notifyListeners();
+    } catch (e) {
+      _appError = ErrorParser.parse(e);
+      _error = _appError!.message;
+      notifyListeners();
+      rethrow;
+    }
   }
 }
