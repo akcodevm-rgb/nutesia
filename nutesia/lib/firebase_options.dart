@@ -17,38 +17,22 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
         return ios;
-      case TargetPlatform.macOS:
-        return macos;
-      case TargetPlatform.windows:
-        return windows;
-      case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
         );
     }
   }
-
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyC3U06hkPBFozPAehObIOePraTwruT1pTE',
-    appId: '1:965685675618:web:f9bea39b556a331a83f33b',
-    messagingSenderId: '965685675618',
-    projectId: 'nuto-4e646',
-    authDomain: 'nuto-4e646.firebaseapp.com',
-    storageBucket: 'nuto-4e646.firebasestorage.app',
-    measurementId: 'G-0EFY71SFD9',
-  );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBsFN7T7Ot0Zu3i2PPG5KE6M_wIMZMU5oo',
@@ -65,24 +49,5 @@ class DefaultFirebaseOptions {
     projectId: 'nutesia',
     storageBucket: 'nutesia.firebasestorage.app',
     iosBundleId: 'com.blueregan.nutesia',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCdG8qgHjCGvj7Qz5Dvzu9ptWKVOhvMpzY',
-    appId: '1:232969473209:ios:0fa3a5a18c97adba1d5f68',
-    messagingSenderId: '232969473209',
-    projectId: 'nutesia',
-    storageBucket: 'nutesia.firebasestorage.app',
-    iosBundleId: 'com.blueregan.nutesia',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyC3U06hkPBFozPAehObIOePraTwruT1pTE',
-    appId: '1:965685675618:web:5d958029561b0e2783f33b',
-    messagingSenderId: '965685675618',
-    projectId: 'nuto-4e646',
-    authDomain: 'nuto-4e646.firebaseapp.com',
-    storageBucket: 'nuto-4e646.firebasestorage.app',
-    measurementId: 'G-CW6R0Q7XH7',
   );
 }
