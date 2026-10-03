@@ -3,9 +3,11 @@ name: Launch Check
 # Installs the release APK on an Android emulator, launches it, and prints
 # the crash log, so startup crashes can be diagnosed without a device.
 on:
-  workflow_dispatch:
   push:
-    branches: [rebuild/fresh-project]
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   launch:
