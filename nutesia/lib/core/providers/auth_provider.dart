@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../services/device_service.dart';
 import '../utils/error_handler.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -139,12 +140,15 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Signs out of Firebase, which deletes the stored ID and refresh tokens,
+  /// so later API calls carry no Authorization header.
   Future<void> signOut() async {
     _isLoading = true;
     notifyListeners();
     try {
       await _auth.signOut();
       _user = null;
+      DeviceService.clearCache();
     } finally {
       _isLoading = false;
       notifyListeners();

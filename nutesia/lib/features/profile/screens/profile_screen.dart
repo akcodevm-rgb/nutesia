@@ -7,12 +7,14 @@ import '../../../shared/models/member_model.dart';
 import '../../../shared/models/nutrition_model.dart';
 import '../../../shared/models/nutrition_space_model.dart';
 import '../../../shared/providers/tab_toggle_provider.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../core/providers/credit_provider.dart';
 import '../../../core/providers/rewarded_ad_provider.dart';
 import '../../../shared/widgets/credit_chip.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../../shared/widgets/manage_members_sheet.dart';
 import '../providers/nutrition_space_provider.dart';
+import '../providers/profile_provider.dart';
 import '../../onboarding/screens/profile_setup_screen.dart';
 import '../../../shared/utils/url_helper.dart';
 import '../../../shared/widgets/error_views/error_views.dart';
@@ -572,6 +574,12 @@ class _ProfileContent extends StatelessWidget {
                 'Contact Support',
                 Icons.mail_outline_rounded,
                 onTap: () => launchUrlString('mailto:akhilcode74@gmail.com'),
+              ),
+              _MenuRow(
+                'Log Out',
+                Icons.logout_rounded,
+                color: AppTheme.error,
+                onTap: () => _confirmLogout(context),
                 isLast: true,
               ),
             ],
@@ -580,6 +588,37 @@ class _ProfileContent extends StatelessWidget {
         const Gap(80),
       ],
     );
+  }
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Log out?'),
+        content: const Text(
+          'You will need to sign in again. Data saved on this device will be cleared.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Log Out', style: TextStyle(color: AppTheme.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final auth = context.read<AuthProvider>();
+    final profile = context.read<UserProfileProvider>();
+    // Wipe locally cached profile, food and water data, then sign out of
+    // Firebase (which removes the auth tokens). AuthWrapper then shows login.
+    await profile.clearProfile();
+    await auth.signOut();
   }
 
   void _showAddMemberModal(BuildContext context) {
@@ -1032,8 +1071,9 @@ class _MenuRow extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool isLast;
+  final Color? color;
 
-  const _MenuRow(this.title, this.icon, {required this.onTap, this.isLast = false});
+  const _MenuRow(this.title, this.icon, {required this.onTap, this.isLast = false, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -1046,9 +1086,9 @@ class _MenuRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
             child: Row(
               children: [
-                Icon(icon, size: 20, color: AppTheme.textSecondary),
+                Icon(icon, size: 20, color: color ?? AppTheme.textSecondary),
                 const Gap(12),
-                Text(title, style: const TextStyle(fontSize: 14)),
+                Text(title, style: TextStyle(fontSize: 14, color: color)),
                 const Spacer(),
                 const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.textMuted),
               ],
