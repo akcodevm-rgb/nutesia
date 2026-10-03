@@ -230,6 +230,8 @@ class _ManageMembersSheetContentState extends State<_ManageMembersSheetContent> 
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          // `value` keeps the field in sync with provider state; `initialValue` is read once.
+                          // ignore: deprecated_member_use
                           value: formProvider.gender,
                           decoration: const InputDecoration(
                             labelText: 'Gender',
@@ -247,6 +249,8 @@ class _ManageMembersSheetContentState extends State<_ManageMembersSheetContent> 
                       const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          // `value` keeps the field in sync with provider state; `initialValue` is read once.
+                          // ignore: deprecated_member_use
                           value: formProvider.relationship,
                           decoration: const InputDecoration(
                             labelText: 'Role',
@@ -304,6 +308,8 @@ class _ManageMembersSheetContentState extends State<_ManageMembersSheetContent> 
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
+                    // `value` keeps the field in sync with provider state; `initialValue` is read once.
+                    // ignore: deprecated_member_use
                     value: (formProvider.relationship == 'child' && formProvider.goal == 'lose_weight')
                         ? 'maintain_weight'
                         : formProvider.goal,

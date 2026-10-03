@@ -12,7 +12,6 @@ class CreditProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   AppError? _appError;
-  String? _deviceId;
 
   CreditProvider({CreditService? service})
       : _service = service ?? CreditService() {

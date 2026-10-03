@@ -140,7 +140,7 @@ class ConfirmFoodScreen extends StatelessWidget {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: foods.length + 1,
-                    separatorBuilder: (_, __) => const Gap(12),
+                    separatorBuilder: (_, _) => const Gap(12),
                     itemBuilder: (ctx, i) {
                       if (i == foods.length) {
                         // AI Explanation card
@@ -330,6 +330,8 @@ class _EditableFoodCardState extends State<_EditableFoodCard> {
               // Unit dropdown
               Expanded(
                 child: DropdownButtonFormField<String>(
+                  // `value` keeps the field in sync with provider state; `initialValue` is read once.
+                  // ignore: deprecated_member_use
                   value: AppConstants.foodUnits.contains(widget.food.unit)
                       ? widget.food.unit
                       : AppConstants.foodUnits.first,

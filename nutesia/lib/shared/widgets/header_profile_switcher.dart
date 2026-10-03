@@ -145,7 +145,7 @@ class HeaderProfileSwitcher extends StatelessWidget {
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: currentSpace.profiles.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, idx) {
                         final profile = currentSpace.profiles[idx];
                         final isActive = profile.id == activeId;

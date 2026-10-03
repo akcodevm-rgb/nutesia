@@ -39,8 +39,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success && context.mounted) {
       await context.read<UserProfileProvider>().load();
       if (context.mounted) {
-        await context.read<NutritionSpaceProvider>().refresh();
-        await context.read<CreditProvider>().refresh();
+        final spaces = context.read<NutritionSpaceProvider>();
+        final credits = context.read<CreditProvider>();
+        await spaces.refresh();
+        await credits.refresh();
       }
     } else if (!success && context.mounted) {
       AppToast.showError(
@@ -67,8 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success && context.mounted) {
       await context.read<UserProfileProvider>().load();
       if (context.mounted) {
-        await context.read<NutritionSpaceProvider>().refresh();
-        await context.read<CreditProvider>().refresh();
+        final spaces = context.read<NutritionSpaceProvider>();
+        final credits = context.read<CreditProvider>();
+        await spaces.refresh();
+        await credits.refresh();
       }
     } else if (!success && context.mounted) {
       AppToast.showError(
@@ -92,8 +96,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (success && context.mounted) {
       await context.read<UserProfileProvider>().load();
       if (context.mounted) {
-        await context.read<NutritionSpaceProvider>().refresh();
-        await context.read<CreditProvider>().refresh();
+        final spaces = context.read<NutritionSpaceProvider>();
+        final credits = context.read<CreditProvider>();
+        await spaces.refresh();
+        await credits.refresh();
       }
     } else if (!success && context.mounted) {
       AppToast.showError(

@@ -29,8 +29,8 @@ class SkeuoCard extends StatelessWidget {
     final themeColor = baseColor ?? AppTheme.surface;
 
     // Highlights and shadows for the skeuomorphic 3D depth
-    final Color shadowColor = Colors.black.withOpacity(0.6);
-    final Color highlightColor = const Color(0xFF1E2D4A).withOpacity(0.4);
+    final Color shadowColor = Colors.black.withValues(alpha: 0.6);
+    final Color highlightColor = const Color(0xFF1E2D4A).withValues(alpha: 0.4);
 
     final Widget cardContent = AnimatedContainer(
       duration: const Duration(milliseconds: 150),
@@ -41,16 +41,16 @@ class SkeuoCard extends StatelessWidget {
         gradient: depressed
             ? LinearGradient(
                 colors: [
-                  themeColor.withOpacity(0.8),
-                  themeColor.withOpacity(0.95),
+                  themeColor.withValues(alpha: 0.8),
+                  themeColor.withValues(alpha: 0.95),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               )
             : LinearGradient(
                 colors: [
-                  themeColor.withOpacity(1.0),
-                  themeColor.withOpacity(0.85),
+                  themeColor.withValues(alpha: 1.0),
+                  themeColor.withValues(alpha: 0.85),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -86,8 +86,8 @@ class SkeuoCard extends StatelessWidget {
               ],
         border: Border.all(
           color: depressed
-              ? Colors.black.withOpacity(0.5)
-              : const Color(0xFF2E3E5C).withOpacity(0.5),
+              ? Colors.black.withValues(alpha: 0.5)
+              : const Color(0xFF2E3E5C).withValues(alpha: 0.5),
           width: 1.5,
         ),
       ),
@@ -131,7 +131,7 @@ class SkeuoToggle extends StatelessWidget {
         boxShadow: [
           // Inner shadow effect
           BoxShadow(
-            color: Colors.black.withOpacity(0.8),
+            color: Colors.black.withValues(alpha: 0.8),
             offset: const Offset(1, 1),
             blurRadius: 3,
           )
@@ -162,19 +162,19 @@ class SkeuoToggle extends StatelessWidget {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withValues(alpha: 0.4),
                             offset: const Offset(0, 3),
                             blurRadius: 4,
                           ),
                           BoxShadow(
-                            color: AppTheme.primary.withOpacity(0.2),
+                            color: AppTheme.primary.withValues(alpha: 0.2),
                             blurRadius: 6,
                           )
                         ]
                       : null,
                   border: isSelected
                       ? Border.all(
-                          color: AppTheme.primary.withOpacity(0.5),
+                          color: AppTheme.primary.withValues(alpha: 0.5),
                           width: 1,
                         )
                       : null,
@@ -266,7 +266,7 @@ class SkeuoDial extends StatelessWidget {
                       Border.all(color: const Color(0xFF2E3E5C), width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       offset: const Offset(1, 1),
                       blurRadius: 2,
                     ),
@@ -281,7 +281,7 @@ class SkeuoDial extends StatelessWidget {
                     color: activeColor,
                     shadows: [
                       Shadow(
-                          color: activeColor.withOpacity(0.6), blurRadius: 4),
+                          color: activeColor.withValues(alpha: 0.6), blurRadius: 4),
                     ],
                   ),
                 ),
@@ -439,16 +439,16 @@ class SkeuoProgress extends StatelessWidget {
                 borderRadius: BorderRadius.circular(height / 2),
                 gradient: LinearGradient(
                   colors: [
-                    color.withOpacity(0.8),
+                    color.withValues(alpha: 0.8),
                     color,
-                    color.withOpacity(0.9),
+                    color.withValues(alpha: 0.9),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: color.withOpacity(0.5),
+                    color: color.withValues(alpha: 0.5),
                     blurRadius: 4,
                     spreadRadius: 1,
                   )
@@ -464,7 +464,7 @@ class SkeuoProgress extends StatelessWidget {
             child: Container(
               height: height * 0.25,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
+                color: Colors.white.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(height * 0.125),
               ),
             ),
@@ -549,8 +549,8 @@ class _SkeuoRadarPainter extends CustomPainter {
     final sweepPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF00FF66).withOpacity(0.15),
-          const Color(0xFF00FF66).withOpacity(0.0),
+          const Color(0xFF00FF66).withValues(alpha: 0.15),
+          const Color(0xFF00FF66).withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: center, radius: maxRadius))
       ..style = PaintingStyle.fill;
@@ -588,11 +588,11 @@ class _SkeuoRadarPainter extends CustomPainter {
 
       if (diffAngle < 0.8 || (2 * math.pi - diffAngle) < 0.8) {
         final opacity = (1.0 - (diffAngle / 0.8)).clamp(0.0, 1.0);
-        targetPaint.color = const Color(0xFF00FF66).withOpacity(opacity);
+        targetPaint.color = const Color(0xFF00FF66).withValues(alpha: opacity);
         canvas.drawCircle(pos, 4, targetPaint);
         // Outer rings of targets
         final pulsePaint = Paint()
-          ..color = const Color(0xFF00FF66).withOpacity(opacity * 0.4)
+          ..color = const Color(0xFF00FF66).withValues(alpha: opacity * 0.4)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.0;
         canvas.drawCircle(pos, 8 * (1.0 - opacity + 0.3), pulsePaint);
@@ -819,7 +819,7 @@ class _LineChartPainter extends CustomPainter {
 
     // 1. Draw horizontal background grid lines (dotted)
     final gridPaint = Paint()
-      ..color = const Color(0xFF1E2D4A).withOpacity(0.2)
+      ..color = const Color(0xFF1E2D4A).withValues(alpha: 0.2)
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
@@ -858,8 +858,8 @@ class _LineChartPainter extends CustomPainter {
       final fillPaint = Paint()
         ..shader = LinearGradient(
           colors: [
-            startColor.withOpacity(0.22),
-            startColor.withOpacity(0.0),
+            startColor.withValues(alpha: 0.22),
+            startColor.withValues(alpha: 0.0),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -901,7 +901,7 @@ class _LineChartPainter extends CustomPainter {
 
       // Vertical helper line
       final vLinePaint = Paint()
-        ..color = const Color(0xFF3864F2).withOpacity(0.6)
+        ..color = const Color(0xFF3864F2).withValues(alpha: 0.6)
         ..strokeWidth = 1.0;
       canvas.drawLine(Offset(point.dx, 0), Offset(point.dx, size.height), vLinePaint);
 
@@ -913,7 +913,7 @@ class _LineChartPainter extends CustomPainter {
 
       // Glow circle at intersection point of values1
       final pointGlowPaint = Paint()
-        ..color = const Color(0xFF33D0F7).withOpacity(0.3)
+        ..color = const Color(0xFF33D0F7).withValues(alpha: 0.3)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(point, 12, pointGlowPaint);
 

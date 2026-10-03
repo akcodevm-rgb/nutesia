@@ -38,10 +38,10 @@ class FoodTimelineItem extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: mealColor.withOpacity(0.12),
+                  color: mealColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: mealColor.withOpacity(0.3), width: 1),
+                      color: mealColor.withValues(alpha: 0.3), width: 1),
                 ),
                 child: Center(
                   child: Icon(
@@ -78,7 +78,7 @@ class FoodTimelineItem extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: mealColor.withOpacity(0.12),
+                        color: mealColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
