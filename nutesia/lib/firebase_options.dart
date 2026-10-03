@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBsFN7T7Ot0Zu3i2PPG5KE6M_wIMZMU5oo',
-    appId: '1:232969473209:android:7c5678d100efb22a1d5f68',
+    appId: '1:232969473209:android:3557d4b8c9fb28831d5f68',
     messagingSenderId: '232969473209',
     projectId: 'nutesia',
     storageBucket: 'nutesia.firebasestorage.app',
@@ -60,20 +60,20 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCdG8qgHjCGvj7Qz5Dvzu9ptWKVOhvMpzY',
-    appId: '1:232969473209:ios:f10df3f768f2a0281d5f68',
+    appId: '1:232969473209:ios:0fa3a5a18c97adba1d5f68',
     messagingSenderId: '232969473209',
     projectId: 'nutesia',
     storageBucket: 'nutesia.firebasestorage.app',
-    iosBundleId: 'com.skyrain.nutesia',
+    iosBundleId: 'com.blueregan.nutesia',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyCdG8qgHjCGvj7Qz5Dvzu9ptWKVOhvMpzY',
-    appId: '1:232969473209:ios:f10df3f768f2a0281d5f68',
+    appId: '1:232969473209:ios:0fa3a5a18c97adba1d5f68',
     messagingSenderId: '232969473209',
     projectId: 'nutesia',
     storageBucket: 'nutesia.firebasestorage.app',
-    iosBundleId: 'com.skyrain.nutesia',
+    iosBundleId: 'com.blueregan.nutesia',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

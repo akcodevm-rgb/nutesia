@@ -115,7 +115,7 @@ class FoodDetailScreen extends ConsumerWidget {
     );
     if (ok == true && context.mounted) {
       await ref.read(foodEntriesProvider.notifier).deleteEntry(entry.id);
-      Navigator.of(context).pop();
+      if (context.mounted) Navigator.of(context).pop();
     }
   }
 }
@@ -135,7 +135,7 @@ class _HeaderCard extends StatelessWidget {
     final extra = entry.foods.length - 1;
 
     return GlassCard(
-      borderColor: mealColor.withOpacity(0.3),
+      borderColor: mealColor.withValues(alpha: 0.3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -352,7 +352,7 @@ class _SmallBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(text,
@@ -452,7 +452,7 @@ class _TabBtn extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected
-              ? AppTheme.primary.withOpacity(0.15)
+              ? AppTheme.primary.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
@@ -513,14 +513,14 @@ class _AiExplanationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      borderColor: AppTheme.primary.withOpacity(0.25),
+      borderColor: AppTheme.primary.withValues(alpha: 0.25),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.12),
+              color: AppTheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.auto_awesome_rounded,

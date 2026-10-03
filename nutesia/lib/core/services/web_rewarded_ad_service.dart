@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'package:flutter/foundation.dart';
-import 'package:web/web.dart' as web;
 
 /// A singleton service that manages Google Publisher Tag (GPT) Rewarded Video Ads
 /// for Flutter Web using modern compile-safe JS Interop.

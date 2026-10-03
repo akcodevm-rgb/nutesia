@@ -1,4 +1,4 @@
-package com.skyrain.nutesia
+package com.blueregan.nutesia
 
 import io.flutter.embedding.android.FlutterActivity
 

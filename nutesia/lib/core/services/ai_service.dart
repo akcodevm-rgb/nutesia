@@ -553,15 +553,15 @@ Rules:
     required Map<String, double> targets,
     required List<String> topFoods,
   }) async {
-    log('AIService.analyzeDeficiencies: Running analysis for ${user.name}');
+    log('AIService.analyzeDeficiencies: Running analysis ($period)');
     if (_apiKey.isEmpty || _apiKey == 'your_groq_api_key_here') {
       log('NutesiaAI: No GROQ_API_KEY found, using mock deficiency analysis');
       return _mockDeficiencyAnalysis(user, period, averageIntake, targets);
     }
 
     final inputBuffer = StringBuffer();
+    // The user's name is deliberately not sent: the analysis doesn't need it.
     inputBuffer.writeln('User Profile:');
-    inputBuffer.writeln('- Name: ${user.name}');
     inputBuffer.writeln('- Age: ${user.age}');
     inputBuffer.writeln('- Gender: ${user.gender}');
     inputBuffer.writeln('- Goal: ${user.goal}');
@@ -741,15 +741,24 @@ Rules:
     final names = foods.map((f) => f.name).join(' + ');
     final insights = <String>[];
 
-    if (total.protein >= 30) insights.add('excellent protein source');
-    else if (total.protein >= 15) insights.add('good protein content');
+    if (total.protein >= 30) {
+      insights.add('excellent protein source');
+    } else if (total.protein >= 15) {
+      insights.add('good protein content');
+    }
     if (total.carbs > 60) insights.add('high in carbohydrates for energy');
-    if (total.fat < 5) insights.add('low fat');
-    else if (total.fat > 20) insights.add('moderate fat — watch portions');
+    if (total.fat < 5) {
+      insights.add('low fat');
+    } else if (total.fat > 20) {
+      insights.add('moderate fat — watch portions');
+    }
     if (total.minerals.iron > 3) insights.add('rich in iron');
     if (total.vitamins.vitaminC > 30) insights.add('high in Vitamin C');
-    if (total.calories < 250) insights.add('light & low calorie');
-    else if (total.calories > 700) insights.add('energy-dense — portion mindfully');
+    if (total.calories < 250) {
+      insights.add('light & low calorie');
+    } else if (total.calories > 700) {
+      insights.add('energy-dense — portion mindfully');
+    }
     if (total.minerals.calcium > 200) insights.add('calcium-rich');
 
     final insightStr = insights.isEmpty ? 'provides a balanced mix of nutrients' : insights.join(', ');

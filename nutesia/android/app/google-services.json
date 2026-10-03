@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:232969473209:android:3557d4b8c9fb28831d5f68",
+        "android_client_info": {
+          "package_name": "com.blueregan.nutesia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsFN7T7Ot0Zu3i2PPG5KE6M_wIMZMU5oo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:232969473209:android:7c5678d100efb22a1d5f68",
         "android_client_info": {
           "package_name": "com.skyrain.nutesia"

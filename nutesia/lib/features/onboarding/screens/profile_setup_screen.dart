@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -184,7 +183,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppTheme.primary.withOpacity(0.12),
+              color: AppTheme.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.restaurant_menu_rounded,
@@ -420,7 +419,7 @@ class _GenderChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             color: selected
-                ? AppTheme.primary.withOpacity(0.15)
+                ? AppTheme.primary.withValues(alpha: 0.15)
                 : AppTheme.card,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
@@ -576,7 +575,7 @@ class _MetricSlider extends StatelessWidget {
               activeTrackColor: AppTheme.primary,
               inactiveTrackColor: AppTheme.cardBorder,
               thumbColor: AppTheme.primary,
-              overlayColor: AppTheme.primary.withOpacity(0.12),
+              overlayColor: AppTheme.primary.withValues(alpha: 0.12),
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
             ),
             child: Slider(
@@ -625,13 +624,13 @@ class _BmiPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      borderColor: _bmiColor.withOpacity(0.4),
+      borderColor: _bmiColor.withValues(alpha: 0.4),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _bmiColor.withOpacity(0.12),
+              color: _bmiColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(Icons.monitor_heart_outlined, color: _bmiColor),
@@ -656,9 +655,9 @@ class _BmiPreviewCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _bmiColor.withOpacity(0.12),
+              color: _bmiColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _bmiColor.withOpacity(0.3)),
+              border: Border.all(color: _bmiColor.withValues(alpha: 0.3)),
             ),
             child: Text(
               bmi.category,
@@ -741,7 +740,7 @@ class _StepGoal extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: selected
-                        ? color.withOpacity(0.1)
+                        ? color.withValues(alpha: 0.1)
                         : AppTheme.card,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
