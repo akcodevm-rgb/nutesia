@@ -25,16 +25,16 @@ class Vitamins {
   });
 
   factory Vitamins.fromJson(Map<String, dynamic> json) => Vitamins(
-        vitaminA: _toDouble(json['A']),
-        vitaminB1: _toDouble(json['B1']),
-        vitaminB2: _toDouble(json['B2']),
-        vitaminB6: _toDouble(json['B6']),
-        vitaminB12: _toDouble(json['B12']),
-        vitaminC: _toDouble(json['C']),
-        vitaminD: _toDouble(json['D']),
-        vitaminE: _toDouble(json['E']),
-        vitaminK: _toDouble(json['K']),
-        folate: _toDouble(json['folate']),
+        vitaminA: _toDouble(json['vitaminA'] ?? json['A']),
+        vitaminB1: _toDouble(json['vitaminB1'] ?? json['B1']),
+        vitaminB2: _toDouble(json['vitaminB2'] ?? json['B2']),
+        vitaminB6: _toDouble(json['vitaminB6'] ?? json['B6']),
+        vitaminB12: _toDouble(json['vitaminB12'] ?? json['B12']),
+        vitaminC: _toDouble(json['vitaminC'] ?? json['C']),
+        vitaminD: _toDouble(json['vitaminD'] ?? json['D']),
+        vitaminE: _toDouble(json['vitaminE'] ?? json['E']),
+        vitaminK: _toDouble(json['vitaminK'] ?? json['K']),
+        folate: _toDouble(json['vitaminB9'] ?? json['folate']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -198,5 +198,10 @@ double _toDouble(dynamic val) {
   if (val is double) return val;
   if (val is int) return val.toDouble();
   if (val is String) return double.tryParse(val) ?? 0;
+  if (val is Map) {
+    final amt = val['amount'];
+    if (amt != null) return _toDouble(amt);
+  }
   return 0;
 }
+

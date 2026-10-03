@@ -3,6 +3,7 @@ class AppConstants {
   static const String deviceIdKey = 'nuto_device_id';
   static const String userProfileKey = 'nuto_user_profile';
   static const String foodEntriesKey = 'nuto_food_entries';
+  static const String waterIntakePrefixKey = 'nuto_water_intake_';
 
   // Meal Types
   static const List<String> mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
@@ -38,10 +39,4 @@ class AppConstants {
     'small',
   ];
 
-  // AI Note
-  // To enable real AI parsing, deploy the Firebase Cloud Function
-  // and set GEMINI_API_KEY (or OPENAI_API_KEY) in Firebase secrets.
-  // The app will automatically use the Cloud Function when available.
-  static const String cloudFunctionBaseUrl = '';
-  // e.g. 'https://us-central1-your-project.cloudfunctions.net'
 }

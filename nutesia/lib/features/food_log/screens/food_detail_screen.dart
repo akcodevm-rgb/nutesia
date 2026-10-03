@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../shared/models/food_entry_model.dart';
 import '../../../shared/models/nutrition_model.dart';
+import '../../../shared/providers/tab_toggle_provider.dart';
 import '../../../shared/widgets/glass_card.dart';
 import '../../home/providers/home_provider.dart';
 
-class FoodDetailScreen extends ConsumerWidget {
+class FoodDetailScreen extends StatelessWidget {
   final FoodEntry entry;
 
   const FoodDetailScreen({super.key, required this.entry});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
@@ -24,7 +25,7 @@ class FoodDetailScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded,
                 color: AppTheme.error),
-            onPressed: () => _confirmDelete(context, ref),
+            onPressed: () => _confirmDelete(context),
           ),
         ],
       ),
@@ -94,7 +95,8 @@ class FoodDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDelete(BuildContext context) async {
+    final home = context.read<HomeProvider>();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -114,8 +116,10 @@ class FoodDetailScreen extends ConsumerWidget {
       ),
     );
     if (ok == true && context.mounted) {
-      await ref.read(foodEntriesProvider.notifier).deleteEntry(entry.id);
-      if (context.mounted) Navigator.of(context).pop();
+      await home.deleteEntry(entry.id);
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 }
@@ -285,7 +289,7 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
         if (!isLast)
-          Divider(height: 1, color: AppTheme.divider),
+          const Divider(height: 1, color: AppTheme.divider),
       ],
     );
   }
@@ -364,70 +368,72 @@ class _SmallBadge extends StatelessWidget {
 
 // ─── Vitamins & Minerals Card ──────────────────────────────────────────────
 
-class _VitaminMineralCard extends StatefulWidget {
+class _VitaminMineralCard extends StatelessWidget {
   final NutritionData nutrition;
 
   const _VitaminMineralCard({required this.nutrition});
 
   @override
-  State<_VitaminMineralCard> createState() => _VitaminMineralCardState();
-}
-
-class _VitaminMineralCardState extends State<_VitaminMineralCard> {
-  bool _showMinerals = false;
-
-  @override
   Widget build(BuildContext context) {
-    final v = widget.nutrition.vitamins;
-    final m = widget.nutrition.minerals;
+    final v = nutrition.vitamins;
+    final m = nutrition.minerals;
 
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              _TabBtn('Vitamins', !_showMinerals,
-                  () => setState(() => _showMinerals = false)),
-              const Gap(8),
-              _TabBtn('Minerals', _showMinerals,
-                  () => setState(() => _showMinerals = true)),
-            ],
-          ),
-          const Gap(12),
-          AnimatedCrossFade(
-            crossFadeState: _showMinerals
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
-            firstChild: Column(
+    return ChangeNotifierProvider(
+      create: (_) => TabToggleProvider(),
+      child: Consumer<TabToggleProvider>(
+        builder: (context, toggleProvider, _) {
+          final showMinerals = toggleProvider.isSecondary;
+
+          return GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _MicroDetailRow('Vitamin A', _fmt(v.vitaminA), 'mcg'),
-                _MicroDetailRow('Vitamin B1', _fmt(v.vitaminB1), 'mg'),
-                _MicroDetailRow('Vitamin B6', _fmt(v.vitaminB6), 'mg'),
-                _MicroDetailRow('Vitamin B12', _fmt(v.vitaminB12), 'mcg'),
-                _MicroDetailRow('Vitamin C', _fmt(v.vitaminC), 'mg'),
-                _MicroDetailRow('Vitamin D', _fmt(v.vitaminD), 'mcg'),
-                _MicroDetailRow('Vitamin E', _fmt(v.vitaminE), 'mg'),
-                _MicroDetailRow('Vitamin K', _fmt(v.vitaminK), 'mcg'),
-                _MicroDetailRow('Folate', _fmt(v.folate), 'mcg',
-                    isLast: true),
+                Row(
+                  children: [
+                    _TabBtn('Vitamins', !showMinerals,
+                        () => toggleProvider.selectPrimary()),
+                    const Gap(8),
+                    _TabBtn('Minerals', showMinerals,
+                        () => toggleProvider.selectSecondary()),
+                  ],
+                ),
+                const Gap(12),
+                AnimatedCrossFade(
+                  crossFadeState: showMinerals
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 200),
+                  firstChild: Column(
+                    children: [
+                      _MicroDetailRow('Vitamin A', _fmt(v.vitaminA), 'mcg'),
+                      _MicroDetailRow('Vitamin B1', _fmt(v.vitaminB1), 'mg'),
+                      _MicroDetailRow('Vitamin B6', _fmt(v.vitaminB6), 'mg'),
+                      _MicroDetailRow('Vitamin B12', _fmt(v.vitaminB12), 'mcg'),
+                      _MicroDetailRow('Vitamin C', _fmt(v.vitaminC), 'mg'),
+                      _MicroDetailRow('Vitamin D', _fmt(v.vitaminD), 'mcg'),
+                      _MicroDetailRow('Vitamin E', _fmt(v.vitaminE), 'mg'),
+                      _MicroDetailRow('Vitamin K', _fmt(v.vitaminK), 'mcg'),
+                      _MicroDetailRow('Folate', _fmt(v.folate), 'mcg',
+                          isLast: true),
+                    ],
+                  ),
+                  secondChild: Column(
+                    children: [
+                      _MicroDetailRow('Calcium', _fmt(m.calcium), 'mg'),
+                      _MicroDetailRow('Iron', _fmt(m.iron), 'mg'),
+                      _MicroDetailRow('Zinc', _fmt(m.zinc), 'mg'),
+                      _MicroDetailRow('Magnesium', _fmt(m.magnesium), 'mg'),
+                      _MicroDetailRow('Potassium', _fmt(m.potassium), 'mg'),
+                      _MicroDetailRow('Sodium', _fmt(m.sodium), 'mg'),
+                      _MicroDetailRow('Phosphorus', _fmt(m.phosphorus), 'mg',
+                          isLast: true),
+                    ],
+                  ),
+                ),
               ],
             ),
-            secondChild: Column(
-              children: [
-                _MicroDetailRow('Calcium', _fmt(m.calcium), 'mg'),
-                _MicroDetailRow('Iron', _fmt(m.iron), 'mg'),
-                _MicroDetailRow('Zinc', _fmt(m.zinc), 'mg'),
-                _MicroDetailRow('Magnesium', _fmt(m.magnesium), 'mg'),
-                _MicroDetailRow('Potassium', _fmt(m.potassium), 'mg'),
-                _MicroDetailRow('Sodium', _fmt(m.sodium), 'mg'),
-                _MicroDetailRow('Phosphorus', _fmt(m.phosphorus), 'mg',
-                    isLast: true),
-              ],
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -497,7 +503,7 @@ class _MicroDetailRow extends StatelessWidget {
             ],
           ),
         ),
-        if (!isLast) Divider(height: 1, color: AppTheme.divider),
+        if (!isLast) const Divider(height: 1, color: AppTheme.divider),
       ],
     );
   }

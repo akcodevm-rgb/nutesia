@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import '../../shared/models/nutrition_model.dart';
 
 class BMIResult {
@@ -34,59 +35,122 @@ class BMIUtils {
     );
   }
 
-  /// Generates personalized daily nutrition targets based on user profile.
-  /// Uses Harris-Benedict BMR × 1.4 sedentary factor + goal adjustment.
+  /// Generates deterministic daily nutrition targets matching the Nutesia reference engine.
+  /// Adults (age >= 18): Mifflin-St Jeor (1990) + PAL + Adult Safety Floors (1500M / 1200F).
+  /// Pediatrics (age 2-17): Schofield (1985) + PAL + DRI Growth Allowance (No deficits).
   static NutritionData generateTargets({
     required double weightKg,
     required double heightCm,
     required int age,
     required String gender,
     required String goal,
+    String? pregnancyStatus,
+    String? breastfeedingStatus,
   }) {
-    // Harris-Benedict BMR
-    double bmr;
-    if (gender == 'male') {
-      bmr = 88.362 + (13.397 * weightKg) + (4.799 * heightCm) - (5.677 * age);
-    } else {
-      bmr = 447.593 + (9.247 * weightKg) + (3.098 * heightCm) - (4.330 * age);
+    if (age < 2 ||
+        (pregnancyStatus != null && pregnancyStatus.isNotEmpty && pregnancyStatus != 'none') ||
+        (breastfeedingStatus != null && breastfeedingStatus.isNotEmpty && breastfeedingStatus != 'none')) {
+      // Under 2, Pregnancy, or Lactation unsupported in local offline target generator
+      return const NutritionData(
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        vitamins: Vitamins(),
+        minerals: Minerals(),
+      );
     }
 
-    // Sedentary TDEE
-    double tdee = bmr * 1.4;
-
-    // Goal-based calorie target
+    final isMale = gender.toLowerCase() == 'male';
     double targetCalories;
-    if (goal == 'lose') {
-      targetCalories = tdee - 300;
-    } else if (goal == 'gain') {
-      targetCalories = tdee + 300;
-    } else {
-      targetCalories = tdee;
-    }
-    targetCalories = targetCalories.clamp(1200, 4000);
-
-    // Macro targets
     double proteinGrams;
-    if (goal == 'gain') {
-      proteinGrams = weightKg * 1.8;
-    } else if (goal == 'lose') {
-      proteinGrams = weightKg * 1.4;
+    double fatGrams;
+    double carbsGrams;
+
+    if (age < 18) {
+      // 1. Schofield Pediatric BMR (1985)
+      double bmr;
+      if (age < 3) {
+        bmr = isMale ? (60.9 * weightKg - 54.0) : (61.0 * weightKg - 51.0);
+      } else if (age < 10) {
+        bmr = isMale ? (22.7 * weightKg + 495.0) : (22.5 * weightKg + 499.0);
+      } else {
+        bmr = isMale ? (17.5 * weightKg + 651.0) : (12.2 * weightKg + 746.0);
+      }
+
+      // Pediatric PAL (lightly active 1.40x default)
+      const pal = 1.40;
+      double growthAllowance = 30.0;
+      if (age >= 10 && age < 14) {
+        growthAllowance = 60.0;
+      } else if (age >= 14) {
+        growthAllowance = 100.0;
+      }
+
+      final tdee = (bmr * pal) + growthAllowance;
+
+      // Pediatric deficit prohibition: if weight_loss, maintain growth baseline
+      if (goal == 'gain' || goal == 'weight_gain') {
+        targetCalories = tdee + 250.0;
+      } else {
+        targetCalories = tdee;
+      }
+
+      // Growth floor
+      double minFloor = 1100.0;
+      if (age >= 10 && age < 14) {
+        minFloor = 1400.0;
+      } else if (age >= 14) {
+        minFloor = 1700.0;
+      }
+      if (targetCalories < minFloor) targetCalories = minFloor;
+
+      // Macros
+      final proteinPerKg = age <= 3 ? 1.1 : (age >= 14 ? 1.4 : 1.2);
+      proteinGrams = math.max(20.0, (weightKg * proteinPerKg).roundToDouble());
+      final fatRatio = age <= 3 ? 0.35 : 0.30;
+      fatGrams = ((targetCalories * fatRatio) / 9.0).roundToDouble();
+      final proteinCal = proteinGrams * 4.0;
+      final fatCal = fatGrams * 9.0;
+      carbsGrams = math.max(100.0, ((targetCalories - proteinCal - fatCal) / 4.0).roundToDouble());
     } else {
-      proteinGrams = weightKg * 1.0;
+      // Adult Mifflin-St Jeor (1990)
+      double bmr;
+      if (isMale) {
+        bmr = (10.0 * weightKg) + (6.25 * heightCm) - (5.0 * age) + 5.0;
+      } else {
+        bmr = (10.0 * weightKg) + (6.25 * heightCm) - (5.0 * age) - 161.0;
+      }
+
+      const pal = 1.375; // lightly active
+      final tdee = bmr * pal;
+
+      if (goal == 'lose' || goal == 'weight_loss') {
+        targetCalories = tdee - 500.0;
+      } else if (goal == 'gain' || goal == 'weight_gain') {
+        targetCalories = tdee + 400.0;
+      } else if (goal == 'muscle_gain') {
+        targetCalories = tdee + 300.0;
+      } else {
+        targetCalories = tdee;
+      }
+
+      // Nutesia Adult Application Safety Floors (1500M / 1200F)
+      final minFloor = isMale ? 1500.0 : 1200.0;
+      if (targetCalories < minFloor) targetCalories = minFloor;
+
+      proteinGrams = math.max(50.0, (weightKg * 1.4).roundToDouble());
+      fatGrams = ((targetCalories * 0.28) / 9.0).roundToDouble();
+      final proteinCal = proteinGrams * 4.0;
+      final fatCal = fatGrams * 9.0;
+      carbsGrams = math.max(130.0, ((targetCalories - proteinCal - fatCal) / 4.0).roundToDouble());
     }
 
-    final fatCalories = targetCalories * 0.27;
-    final fatGrams = fatCalories / 9;
-    final proteinCalories = proteinGrams * 4;
-    final carbsCalories = targetCalories - fatCalories - proteinCalories;
-    final carbsGrams = (carbsCalories / 4).clamp(50, 500);
-
-    // Standard micronutrient RDA (gender-blended for simplicity)
     return NutritionData(
       calories: targetCalories.roundToDouble(),
-      protein: proteinGrams.roundToDouble(),
-      carbs: carbsGrams.roundToDouble(),
-      fat: fatGrams.roundToDouble(),
+      protein: proteinGrams,
+      carbs: carbsGrams,
+      fat: fatGrams,
       vitamins: const Vitamins(
         vitaminA: 900,
         vitaminB1: 1.2,

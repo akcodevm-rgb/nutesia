@@ -37,13 +37,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- AdMob app ID. Required by google_mobile_ads: the app crashes at
-             startup without it. This is Google's official TEST app ID, matching
-             the test ad unit IDs in lib/core/services/rewarded_ad_service.dart.
-             Replace both with your real AdMob IDs before publishing. -->
+        <!-- Production AdMob app ID. Required by google_mobile_ads: the app
+             crashes at startup without it. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-7341313231725400~3371683612"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -1,8 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/credit_constants.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/providers/credit_provider.dart';
-import '../../../core/services/credit_service.dart';
 import '../../../core/services/ai_service.dart';
+import '../../../core/services/api_data_service.dart';
+import '../../../core/services/credit_service.dart';
 import '../../../core/services/device_service.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../profile/providers/profile_provider.dart';
@@ -10,38 +10,13 @@ import '../../../shared/models/nutrition_model.dart';
 
 enum AnalyticsPeriod { weekly, monthly }
 
-final analyticsPeriodProvider =
-    StateProvider<AnalyticsPeriod>((ref) => AnalyticsPeriod.weekly);
-
-// Raw historical logs fetched from Firestore for the range
-final historicalLogsProvider =
-    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final period = ref.watch(analyticsPeriodProvider);
-  final firestore = ref.read(firestoreServiceProvider);
-  final deviceId = await DeviceService.getDeviceId();
-
-  final now = DateTime.now();
-  final daysCount = period == AnalyticsPeriod.weekly ? 7 : 30;
-  final startDate = now.subtract(Duration(days: daysCount - 1));
-
-  final startKey = AppDateUtils.toKey(startDate);
-  final endKey = AppDateUtils.toKey(now);
-
-  return firestore.getDailyLogsForRange(
-    deviceId: deviceId,
-    startDateKey: startKey,
-    endDateKey: endKey,
-  );
-});
-
-// A structured view of the past 7/30 days, filling in missing days with empty values
 class DailyTrendPoint {
   final DateTime date;
   final String dateKey;
   final NutritionData nutrition;
-  final List<dynamic> entries; // raw list of maps
+  final List<dynamic> entries;
 
-  DailyTrendPoint({
+  const DailyTrendPoint({
     required this.date,
     required this.dateKey,
     required this.nutrition,
@@ -49,50 +24,6 @@ class DailyTrendPoint {
   });
 }
 
-final dailyTrendPointsProvider =
-    Provider.autoDispose<List<DailyTrendPoint>>((ref) {
-  final period = ref.watch(analyticsPeriodProvider);
-  final logsAsync = ref.watch(historicalLogsProvider);
-
-  return logsAsync.maybeWhen(
-    data: (logs) {
-      final logsMap = {for (var log in logs) log['date'] as String: log};
-
-      final now = DateTime.now();
-      final daysCount = period == AnalyticsPeriod.weekly ? 7 : 30;
-      final points = <DailyTrendPoint>[];
-
-      for (int i = daysCount - 1; i >= 0; i--) {
-        final date = now.subtract(Duration(days: i));
-        final dateKey = AppDateUtils.toKey(date);
-
-        final log = logsMap[dateKey];
-        if (log != null) {
-          final nutrition = NutritionData.fromJson(
-              log['totalNutrition'] as Map<String, dynamic>);
-          final entries = log['entries'] as List<dynamic>? ?? [];
-          points.add(DailyTrendPoint(
-            date: date,
-            dateKey: dateKey,
-            nutrition: nutrition,
-            entries: entries,
-          ));
-        } else {
-          points.add(DailyTrendPoint(
-            date: date,
-            dateKey: dateKey,
-            nutrition: const NutritionData(),
-            entries: const [],
-          ));
-        }
-      }
-      return points;
-    },
-    orElse: () => [],
-  );
-});
-
-// State for AI deficiency prediction
 class DeficiencyAnalysisState {
   final bool isLoading;
   final String? error;
@@ -100,7 +31,7 @@ class DeficiencyAnalysisState {
   final int? requiredCredits;
   final int? currentCredits;
 
-  DeficiencyAnalysisState({
+  const DeficiencyAnalysisState({
     this.isLoading = false,
     this.error,
     this.result,
@@ -114,187 +45,133 @@ class DeficiencyAnalysisState {
     Map<String, dynamic>? result,
     int? requiredCredits,
     int? currentCredits,
-  }) {
-    return DeficiencyAnalysisState(
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-      result: result ?? this.result,
-      requiredCredits: requiredCredits ?? this.requiredCredits,
-      currentCredits: currentCredits ?? this.currentCredits,
-    );
-  }
+  }) =>
+      DeficiencyAnalysisState(
+        isLoading: isLoading ?? this.isLoading,
+        error: error,
+        result: result ?? this.result,
+        requiredCredits: requiredCredits ?? this.requiredCredits,
+        currentCredits: currentCredits ?? this.currentCredits,
+      );
 }
 
-class DeficiencyAnalysisNotifier
-    extends StateNotifier<DeficiencyAnalysisState> {
-  final Ref _ref;
-  final AIService _aiService = AIService();
+class AnalyticsProvider extends ChangeNotifier {
+  final ApiDataService _api;
+  final AIService _ai;
 
-  DeficiencyAnalysisNotifier(this._ref) : super(DeficiencyAnalysisState()) {
-    // Reset analysis result when the time period changes
-    _ref.listen<AnalyticsPeriod>(analyticsPeriodProvider, (_, _) {
-      reset();
+  AnalyticsPeriod _period = AnalyticsPeriod.weekly;
+  List<Map<String, dynamic>> _historicalLogs = [];
+  bool _isLoadingLogs = false;
+  String? _logsError;
+  DeficiencyAnalysisState _deficiencyState = const DeficiencyAnalysisState();
+
+  AnalyticsProvider({
+    ApiDataService? api,
+    AIService? ai,
+  })  : _api = api ?? ApiDataService(),
+        _ai = ai ?? AIService() {
+    loadHistoricalLogs();
+  }
+
+  AnalyticsPeriod get period => _period;
+  List<Map<String, dynamic>> get historicalLogs => _historicalLogs;
+  bool get isLoadingLogs => _isLoadingLogs;
+  String? get logsError => _logsError;
+  DeficiencyAnalysisState get deficiencyState => _deficiencyState;
+
+  List<DailyTrendPoint> get trendPoints {
+    final byDate = {for (final log in _historicalLogs) log['date'] as String: log};
+    final now = DateTime.now();
+    final days = _period == AnalyticsPeriod.weekly ? 7 : 30;
+    return List.generate(days, (index) {
+      final date = now.subtract(Duration(days: days - index - 1));
+      final dateKey = AppDateUtils.toKey(date);
+      final log = byDate[dateKey];
+      return DailyTrendPoint(
+        date: date,
+        dateKey: dateKey,
+        nutrition: log == null
+            ? const NutritionData()
+            : NutritionData.fromJson(log['totalNutrition'] as Map<String, dynamic>),
+        entries: log?['entries'] as List<dynamic>? ?? const [],
+      );
     });
   }
 
-  Future<void> runAnalysis() async {
-    final userProfileAsync = _ref.read(userProfileProvider);
-    final user = userProfileAsync.valueOrNull;
-    if (user == null) {
-      state = DeficiencyAnalysisState(error: 'User profile not set up yet.');
-      return;
+  void setPeriod(AnalyticsPeriod newPeriod) {
+    if (_period != newPeriod) {
+      _period = newPeriod;
+      _deficiencyState = const DeficiencyAnalysisState();
+      notifyListeners();
+      loadHistoricalLogs();
     }
+  }
 
-    final trendPoints = _ref.read(dailyTrendPointsProvider);
-    if (trendPoints.isEmpty) {
-      state = DeficiencyAnalysisState(
-          error: 'No nutritional logs found in this period.');
-      return;
-    }
-
-    state = state.copyWith(isLoading: true);
-    var charged = false;
+  Future<void> loadHistoricalLogs() async {
+    _isLoadingLogs = true;
+    _logsError = null;
+    notifyListeners();
 
     try {
-      await _ref.read(creditProvider.notifier).spend(
-            amount: CreditConstants.deficiencyAnalysisCost,
-            reason: 'deficiency_analysis',
-          );
-      charged = true;
-
-      final period = _ref.read(analyticsPeriodProvider);
-      final periodStr = period == AnalyticsPeriod.weekly ? '7 Days' : '30 Days';
-
-      final daysCount = trendPoints.length;
-
-      // Collect micro nutrient totals
-      double totalVitA = 0;
-      double totalVitB1 = 0;
-      double totalVitB2 = 0;
-      double totalVitB6 = 0;
-      double totalVitB12 = 0;
-      double totalVitC = 0;
-      double totalVitD = 0;
-      double totalVitE = 0;
-      double totalVitK = 0;
-      double totalFolate = 0;
-      double totalCalcium = 0;
-      double totalIron = 0;
-      double totalZinc = 0;
-      double totalMagnesium = 0;
-      double totalPotassium = 0;
-      double totalSodium = 0;
-      double totalPhosphorus = 0;
-
-      final topFoodsSet = <String>{};
-
-      for (final pt in trendPoints) {
-        final v = pt.nutrition.vitamins;
-        totalVitA += v.vitaminA;
-        totalVitB1 += v.vitaminB1;
-        totalVitB2 += v.vitaminB2;
-        totalVitB6 += v.vitaminB6;
-        totalVitB12 += v.vitaminB12;
-        totalVitC += v.vitaminC;
-        totalVitD += v.vitaminD;
-        totalVitE += v.vitaminE;
-        totalVitK += v.vitaminK;
-        totalFolate += v.folate;
-
-        final m = pt.nutrition.minerals;
-        totalCalcium += m.calcium;
-        totalIron += m.iron;
-        totalZinc += m.zinc;
-        totalMagnesium += m.magnesium;
-        totalPotassium += m.potassium;
-        totalSodium += m.sodium;
-        totalPhosphorus += m.phosphorus;
-
-        for (final entryMap in pt.entries) {
-          if (entryMap is Map<String, dynamic> && entryMap['foods'] != null) {
-            final foods = entryMap['foods'] as List<dynamic>;
-            for (final food in foods) {
-              if (food is Map<String, dynamic> && food['name'] != null) {
-                topFoodsSet.add(food['name'] as String);
-              }
-            }
-          }
-        }
-      }
-
-      final averageIntake = {
-        'vitaminA': totalVitA / daysCount,
-        'vitaminB1': totalVitB1 / daysCount,
-        'vitaminB2': totalVitB2 / daysCount,
-        'vitaminB6': totalVitB6 / daysCount,
-        'vitaminB12': totalVitB12 / daysCount,
-        'vitaminC': totalVitC / daysCount,
-        'vitaminD': totalVitD / daysCount,
-        'vitaminE': totalVitE / daysCount,
-        'vitaminK': totalVitK / daysCount,
-        'folate': totalFolate / daysCount,
-        'calcium': totalCalcium / daysCount,
-        'iron': totalIron / daysCount,
-        'zinc': totalZinc / daysCount,
-        'magnesium': totalMagnesium / daysCount,
-        'potassium': totalPotassium / daysCount,
-        'sodium': totalSodium / daysCount,
-        'phosphorus': totalPhosphorus / daysCount,
-      };
-
-      final targets = user.dailyTargets;
-      final targetMap = {
-        'vitaminA': targets.vitamins.vitaminA,
-        'vitaminB1': targets.vitamins.vitaminB1,
-        'vitaminB2': targets.vitamins.vitaminB2,
-        'vitaminB6': targets.vitamins.vitaminB6,
-        'vitaminB12': targets.vitamins.vitaminB12,
-        'vitaminC': targets.vitamins.vitaminC,
-        'vitaminD': targets.vitamins.vitaminD,
-        'vitaminE': targets.vitamins.vitaminE,
-        'vitaminK': targets.vitamins.vitaminK,
-        'folate': targets.vitamins.folate,
-        'calcium': targets.minerals.calcium,
-        'iron': targets.minerals.iron,
-        'zinc': targets.minerals.zinc,
-        'magnesium': targets.minerals.magnesium,
-        'potassium': targets.minerals.potassium,
-        'sodium': targets.minerals.sodium,
-        'phosphorus': targets.minerals.phosphorus,
-      };
-
-      final analysis = await _aiService.analyzeDeficiencies(
-        user: user,
-        period: periodStr,
-        averageIntake: averageIntake,
-        targets: targetMap,
-        topFoods: topFoodsSet.take(15).toList(),
+      final deviceId = await DeviceService.getDeviceId();
+      final now = DateTime.now();
+      final start = now.subtract(Duration(days: _period == AnalyticsPeriod.weekly ? 6 : 29));
+      final logs = await _api.getDailyLogsForRange(
+        deviceId: deviceId,
+        startDateKey: AppDateUtils.toKey(start),
+        endDateKey: AppDateUtils.toKey(now),
       );
-
-      state = DeficiencyAnalysisState(result: analysis);
-    } on CreditException catch (e) {
-      state = DeficiencyAnalysisState(
-        error: e.message,
-        requiredCredits: e.requiredCredits,
-        currentCredits: e.currentCredits,
-      );
+      _historicalLogs = logs;
+      _isLoadingLogs = false;
+      notifyListeners();
     } catch (e) {
-      if (charged) {
-        await _ref.read(creditProvider.notifier).refund(
-              amount: CreditConstants.deficiencyAnalysisCost,
-              reason: 'deficiency_analysis_failed',
-            );
-      }
-      state = DeficiencyAnalysisState(error: e.toString());
+      _logsError = e.toString();
+      _isLoadingLogs = false;
+      notifyListeners();
     }
   }
 
-  void reset() {
-    state = DeficiencyAnalysisState();
-  }
-}
+  Future<void> runDeficiencyAnalysis({
+    required CreditProvider creditProvider,
+    required UserProfileProvider profileProvider,
+  }) async {
+    if (profileProvider.user == null) {
+      _deficiencyState = const DeficiencyAnalysisState(error: 'User profile not set up yet.');
+      notifyListeners();
+      return;
+    }
 
-final deficiencyAnalysisProvider = StateNotifierProvider.autoDispose<
-    DeficiencyAnalysisNotifier, DeficiencyAnalysisState>((ref) {
-  return DeficiencyAnalysisNotifier(ref);
-});
+    _deficiencyState = _deficiencyState.copyWith(isLoading: true, error: null);
+    notifyListeners();
+
+    try {
+      final now = DateTime.now();
+      final start = now.subtract(Duration(days: _period == AnalyticsPeriod.weekly ? 6 : 29));
+      final result = await _ai.analyzeDeficiencies(
+        deviceId: await DeviceService.getDeviceId(),
+        startDate: AppDateUtils.toKey(start),
+        endDate: AppDateUtils.toKey(now),
+      );
+      await creditProvider.refresh();
+      _deficiencyState = DeficiencyAnalysisState(result: result);
+      notifyListeners();
+    } on CreditException catch (e) {
+      _deficiencyState = DeficiencyAnalysisState(
+        error: e.toString(),
+        requiredCredits: 3,
+        currentCredits: e.currentCredits,
+      );
+      notifyListeners();
+    } catch (e) {
+      _deficiencyState = DeficiencyAnalysisState(error: e.toString());
+      notifyListeners();
+    }
+  }
+
+  void resetDeficiency() {
+    _deficiencyState = const DeficiencyAnalysisState();
+    notifyListeners();
+  }
+
+  Future<void> refresh() => loadHistoricalLogs();
+}

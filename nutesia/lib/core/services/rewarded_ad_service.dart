@@ -18,12 +18,19 @@ class RewardedAdService {
 
   String get _adUnitId {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return 'ca-app-pub-7341313231725400/6331667687';
+    }
+    return 'ca-app-pub-7341313231725400/6331667687';
+  }
+
+  String get _testAdUnitId {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
       return 'ca-app-pub-3940256099942544/1712485313';
     }
     return 'ca-app-pub-3940256099942544/5224354917';
   }
 
-  Future<void> load() async {
+  Future<void> load({String? overrideAdUnitId}) async {
     if (kIsWeb || (defaultTargetPlatform != TargetPlatform.android && defaultTargetPlatform != TargetPlatform.iOS)) {
       log('RewardedAdService: Ads are simulated on this platform.');
       return;
@@ -31,22 +38,36 @@ class RewardedAdService {
     if (_isLoading || _rewardedAd != null) return;
     _isLoading = true;
 
+    final targetUnitId = overrideAdUnitId ?? _adUnitId;
+
     final completer = Completer<void>();
     RewardedAd.load(
-      adUnitId: _adUnitId,
+      adUnitId: targetUnitId,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
-          log('RewardedAdService: rewarded ad loaded');
+          log('RewardedAdService: rewarded ad loaded with unit ID: $targetUnitId');
           _rewardedAd = ad;
           _isLoading = false;
           completer.complete();
         },
         onAdFailedToLoad: (error) {
-          log('RewardedAdService: failed to load rewarded ad: $error');
+          log('RewardedAdService: failed to load rewarded ad ($targetUnitId): $error');
           _rewardedAd = null;
           _isLoading = false;
-          completer.completeError(error);
+
+          // If loading primary ad unit failed (e.g. error code 3: no fill for newly created unit),
+          // fallback to Google test ad unit ID in debug mode so testing is smooth.
+          if (overrideAdUnitId == null && (kDebugMode || targetUnitId != _testAdUnitId)) {
+            log('RewardedAdService: Retrying load with Google test ad unit ID...');
+            load(overrideAdUnitId: _testAdUnitId).then((_) {
+              if (!completer.isCompleted) completer.complete();
+            }).catchError((fallbackError) {
+              if (!completer.isCompleted) completer.completeError(fallbackError);
+            });
+          } else {
+            if (!completer.isCompleted) completer.completeError(error);
+          }
         },
       ),
     );
@@ -64,9 +85,13 @@ class RewardedAdService {
       return true;
     }
 
-    final ad = _rewardedAd;
-    if (ad == null) {
-      await load();
+    if (_rewardedAd == null) {
+      try {
+        await load();
+      } catch (e) {
+        log('RewardedAdService: Error loading ad before show: $e');
+        return false;
+      }
     }
 
     final readyAd = _rewardedAd;
@@ -79,14 +104,14 @@ class RewardedAdService {
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _rewardedAd = null;
-        unawaited(load());
+        unawaited(load().catchError((_) {}));
         if (!completer.isCompleted) completer.complete(earnedReward);
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
         log('RewardedAdService: failed to show rewarded ad: $error');
         ad.dispose();
         _rewardedAd = null;
-        unawaited(load());
+        unawaited(load().catchError((_) {}));
         if (!completer.isCompleted) completer.complete(false);
       },
     );

@@ -1,19 +1,31 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'core/services/config_service.dart';
-import 'core/theme/app_theme.dart';
-import 'features/auth/screens/login_screen.dart';
-import 'features/home/screens/home_screen.dart';
-import 'features/onboarding/screens/profile_setup_screen.dart';
-import 'features/profile/providers/profile_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+
+import 'core/providers/auth_provider.dart';
+import 'core/providers/credit_provider.dart';
+import 'core/providers/rewarded_ad_provider.dart';
 import 'core/services/analytics_service.dart';
+import 'core/services/config_service.dart';
+import 'core/theme/app_theme.dart';
+import 'features/analytics/providers/analytics_provider.dart';
+import 'features/auth/screens/login_screen.dart';
+import 'features/food_log/providers/add_food_provider.dart';
+import 'features/food_log/providers/confirm_food_provider.dart';
+import 'features/home/providers/home_provider.dart';
+import 'features/home/providers/micro_section_provider.dart';
+import 'features/home/providers/water_provider.dart';
+import 'features/home/screens/home_screen.dart';
+import 'features/onboarding/providers/onboarding_provider.dart';
+import 'features/onboarding/screens/profile_setup_screen.dart';
+import 'features/profile/providers/nutrition_space_provider.dart';
+import 'features/profile/providers/profile_provider.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -21,36 +33,98 @@ void main() async {
   await AppConfig.init();
 
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
-    await MobileAds.instance.initialize();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization warning: $e');
   }
 
-  // Status bar: transparent with light icons
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-    systemNavigationBarColor: AppTheme.surface,
-    systemNavigationBarIconBrightness: Brightness.light,
-  ));
+  if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+    try {
+      await MobileAds.instance.initialize();
+    } catch (e) {
+      debugPrint('MobileAds initialization warning: $e');
+    }
+  }
 
-  // Portrait only
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  // Native status bar & orientation configuration
+  if (!kIsWeb) {
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ));
+
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
+
+  // Global production error handling
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[FlutterError] ${details.exceptionAsString()}');
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('[PlatformDispatcher Error] $error');
+    return true;
+  };
+
+  // Graceful fallback UI for unexpected widget build errors in production
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: AppTheme.background,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline_rounded, color: AppTheme.error, size: 48),
+              const Gap(16),
+              const Text(
+                'Something went wrong',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+              ),
+              const Gap(8),
+              const Text(
+                'An unexpected error occurred. Please try again.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
 
   runApp(
-    const ProviderScope(
-      child: NutesiaApp(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => CreditProvider()),
+        ChangeNotifierProvider(create: (_) => RewardedAdProvider()),
+        ChangeNotifierProvider(create: (_) => UserProfileProvider()),
+        ChangeNotifierProvider(create: (_) => NutritionSpaceProvider()),
+        ChangeNotifierProvider(create: (_) => HomeProvider()),
+        ChangeNotifierProvider(create: (_) => WaterProvider()),
+        ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
+        ChangeNotifierProvider(create: (_) => AddFoodProvider()),
+        ChangeNotifierProvider(create: (_) => ConfirmFoodProvider()),
+        ChangeNotifierProvider(create: (_) => OnboardingProvider()),
+        ChangeNotifierProvider(create: (_) => MicroSectionProvider()),
+      ],
+      child: const NutoApp(),
     ),
   );
 }
 
-class NutesiaApp extends StatelessWidget {
-  const NutesiaApp({super.key});
+class NutoApp extends StatelessWidget {
+  const NutoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -69,13 +143,12 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (auth.isLoading && auth.user == null) {
           return const _SplashScreen();
         }
-        if (snapshot.hasData) {
+        if (auth.isAuthenticated) {
           return const _AppRouter();
         }
         return const LoginScreen();
@@ -85,22 +158,31 @@ class AuthWrapper extends StatelessWidget {
 }
 
 /// Routes to onboarding or home based on whether user profile exists.
-class _AppRouter extends ConsumerWidget {
+class _AppRouter extends StatelessWidget {
   const _AppRouter();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(userProfileProvider);
+  Widget build(BuildContext context) {
+    return Consumer2<UserProfileProvider, NutritionSpaceProvider>(
+      builder: (context, profileProvider, spaceProvider, _) {
+        if (profileProvider.isLoading) {
+          return const _SplashScreen();
+        }
 
-    return profileAsync.when(
-      data: (profile) {
-        if (profile == null) {
+        final user = profileProvider.user;
+        if (user == null || !user.isProfileComplete) {
           return const ProfileSetupScreen();
         }
+
+        // Ensure nutrition space fallback is active for this user
+        if (spaceProvider.space == null || spaceProvider.space!.profiles.isEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            spaceProvider.initFromUser(user);
+          });
+        }
+
         return const HomeScreen();
       },
-      loading: () => const _SplashScreen(),
-      error: (_, _) => const ProfileSetupScreen(),
     );
   }
 }
@@ -142,7 +224,7 @@ class _SplashScreen extends StatelessWidget {
                   ),
             ),
             const Gap(8),
-            Text(
+            const Text(
               'Smart Nutrition Tracking',
               style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
             ),

@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+.env.example
+data/
+server.exe
+*.key
+*.pem
+*credentials.json
+*creds.json
+service-account.json
