@@ -1,0 +1,73 @@
+name: Launch Check
+
+# Installs the release APK on an Android emulator, launches it, and prints
+# the crash log, so startup crashes can be diagnosed without a device.
+on:
+  workflow_dispatch:
+  push:
+    branches: [rebuild/fresh-project]
+
+jobs:
+  launch:
+    name: Launch on emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: nutesia
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Build APK (release)
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Enable KVM
+        working-directory: .
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Launch on emulator and collect logs
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          working-directory: nutesia
+          script: |
+            adb install -r build/app/outputs/flutter-apk/app-release.apk
+            adb logcat -c
+            adb shell monkey -p com.blueregan.nutesia -c android.intent.category.LAUNCHER 1
+            sleep 25
+            echo "===== PROCESS =====" ; adb shell pidof com.blueregan.nutesia || echo "NOT RUNNING (crashed or exited)"
+            echo "===== CRASH BUFFER =====" ; adb logcat -d -b crash || true
+            echo "===== APP / RUNTIME LOG =====" ; adb logcat -d | grep -iE "AndroidRuntime|FATAL|flutter|nutesia|DEBUG  |libc  |Ads|Firebase" | tail -300 || true
+            adb logcat -d > logcat.txt || true
+            adb exec-out screencap -p > screen.png || true
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-logs
+          path: |
+            nutesia/logcat.txt
+            nutesia/screen.png
