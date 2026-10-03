@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
+import '../errors/app_error.dart';
 import '../../shared/models/food_entry_model.dart';
 import '../../shared/models/member_model.dart';
 import '../../shared/models/nutrition_model.dart';
@@ -287,22 +288,28 @@ class ApiDataService {
     }
   }
 
+  /// Every API route requires a Firebase ID token. Fail here instead of
+  /// sending a request the server will reject with 401.
   Future<Map<String, String>> _buildHeaders() async {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      try {
-        final token = await user.getIdToken();
-        if (token != null && token.isNotEmpty) {
-          headers['Authorization'] = 'Bearer $token';
-        }
-      } catch (e) {
-        debugPrint('ApiDataService._buildHeaders: Failed to get ID token: $e');
-      }
+    if (user == null) {
+      throw const AuthAppError.notLoggedIn();
     }
-    return headers;
+
+    String? token;
+    try {
+      token = await user.getIdToken();
+    } catch (e) {
+      throw AuthAppError.sessionExpired(technicalDetails: 'getIdToken failed: $e');
+    }
+    if (token == null || token.isEmpty) {
+      throw const AuthAppError.sessionExpired(technicalDetails: 'getIdToken returned no token');
+    }
+
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
   }
 
   Future<http.Response> _get(String path) async {

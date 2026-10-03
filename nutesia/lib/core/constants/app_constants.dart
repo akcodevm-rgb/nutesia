@@ -5,6 +5,10 @@ class AppConstants {
   static const String foodEntriesKey = 'nuto_food_entries';
   static const String waterIntakePrefixKey = 'nuto_water_intake_';
 
+  // QA accounts that use the test_<uid> space (unlimited credits). Must match
+  // QA_EMAILS on the backend, which rejects the alias for anyone else.
+  static const Set<String> qaEmails = {'tester@nuto.app'};
+
   // Meal Types
   static const List<String> mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
 

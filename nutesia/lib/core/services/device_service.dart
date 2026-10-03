@@ -1,17 +1,19 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 
+import '../constants/app_constants.dart';
+
 class DeviceService {
   static String? _cachedId;
 
   /// Returns the current Firebase User's UID if logged in.
-  /// Prepends 'test_' for testing/demo/QA accounts so they automatically receive unlimited credits.
+  /// Prepends 'test_' for allowlisted QA accounts so they receive unlimited credits.
   /// Falls back to a randomly generated UUID if not logged in.
   static Future<String> getDeviceId() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final email = (user.email ?? '').toLowerCase();
-      if (email.contains('test') || email.contains('qa') || email.contains('demo') || email.contains('admin')) {
+      if (AppConstants.qaEmails.contains(email)) {
         _cachedId = 'test_${user.uid}';
       } else {
         _cachedId = user.uid;

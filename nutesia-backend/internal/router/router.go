@@ -16,6 +16,7 @@ func New(
 	wallet *handler.WalletHandler,
 	installation *handler.InstallationHandler,
 	allowedOrigin, projectID string,
+	qaEmails map[string]bool,
 ) *gin.Engine {
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery())
@@ -27,7 +28,7 @@ func New(
 	if projectID != "" {
 		auth := middleware.NewAuthMiddleware(projectID)
 		v1.Use(auth.RequireAuth())
-		v1.Use(verifyUserAccess())
+		v1.Use(verifyUserAccess(qaEmails))
 	}
 
 	// Installation & Anti-abuse telemetry
@@ -59,7 +60,10 @@ func New(
 	return r
 }
 
-func verifyUserAccess() gin.HandlerFunc {
+// verifyUserAccess lets a user reach only their own nutrition space: the
+// path ID must be their UID, or "test_"+UID for allowlisted QA emails.
+// The test_ alias gets unlimited credits, so it must not be open to everyone.
+func verifyUserAccess(qaEmails map[string]bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uid, exists := c.Get("uid")
 		if !exists {
@@ -69,13 +73,20 @@ func verifyUserAccess() gin.HandlerFunc {
 		}
 
 		deviceID := c.Param("deviceId")
-		if deviceID != "" && deviceID != uid.(string) {
+		if deviceID != "" && !canAccessSpace(deviceID, uid.(string), c.GetString("email"), qaEmails) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: access denied to this nutrition space"})
 			c.Abort()
 			return
 		}
 		c.Next()
 	}
+}
+
+func canAccessSpace(deviceID, uid, email string, qaEmails map[string]bool) bool {
+	if deviceID == uid {
+		return true
+	}
+	return deviceID == "test_"+uid && email != "" && qaEmails[email]
 }
 
 func cors(allowedOrigin string) gin.HandlerFunc {

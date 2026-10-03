@@ -44,7 +44,7 @@ func main() {
 	installation := handler.NewInstallationHandler(antiAbuse)
 	health := handler.NewHealthHandler()
 
-	r := router.New(health, data, ai, wallet, installation, cfg.AllowedOrigin, cfg.FirebaseProjectID)
+	r := router.New(health, data, ai, wallet, installation, cfg.AllowedOrigin, cfg.FirebaseProjectID, cfg.QAEmails)
 
 	// ✅ New:
 log.Printf("Nuto API listening on 0.0.0.0:%s", cfg.Port)
