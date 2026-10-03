@@ -118,13 +118,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),
         ChangeNotifierProvider(create: (_) => MicroSectionProvider()),
       ],
-      child: const NutoApp(),
+      child: const NutesiaApp(),
     ),
   );
 }
 
-class NutoApp extends StatelessWidget {
-  const NutoApp({super.key});
+class NutesiaApp extends StatelessWidget {
+  const NutesiaApp({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -533,7 +533,7 @@ class AnalyticsScreen extends StatelessWidget {
             _buildResultsView(context, state.result!),
           ] else ...[
             const Text(
-              'Your eating logs contain critical clues about your micronutrient health. Let NutoAI scan your nutritional timelines to predict potential vitamin/mineral deficiencies and symptoms.',
+              'Your eating logs contain critical clues about your micronutrient health. Let NutesiaAI scan your nutritional timelines to predict potential vitamin/mineral deficiencies and symptoms.',
               style: TextStyle(
                   color: AppTheme.textSecondary, fontSize: 12, height: 1.4),
             ),

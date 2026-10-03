@@ -57,7 +57,7 @@ class DisclaimerScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'NUTO HEALTH & REGULATORY NOTICE',
+                              'NUTESIA HEALTH & REGULATORY NOTICE',
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     letterSpacing: 1.2,
                                     fontWeight: FontWeight.bold,
