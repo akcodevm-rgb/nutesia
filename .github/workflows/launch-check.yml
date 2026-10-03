@@ -62,6 +62,7 @@ jobs:
             echo "===== APP / RUNTIME LOG =====" ; adb logcat -d | grep -iE "AndroidRuntime|FATAL|flutter|nutesia|DEBUG  |libc  |Ads|Firebase" | tail -300 || true
             adb logcat -d > logcat.txt || true
             adb exec-out screencap -p > screen.png || true
+            adb shell pidof com.blueregan.nutesia
 
       - name: Upload logs
         if: always()
