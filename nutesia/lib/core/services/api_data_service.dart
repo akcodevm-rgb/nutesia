@@ -25,7 +25,7 @@ class ApiDataService {
   final http.Client _client;
 
   String get _baseUrl {
-    final value = AppConfig.get('API_BASE_URL', 'http://168.144.148.151:8085');
+    final value = AppConfig.get('API_BASE_URL', 'https://apidot.nutesia.in');
     return value.replaceFirst(RegExp(r'/+$'), '');
   }
 
