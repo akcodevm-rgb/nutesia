@@ -153,7 +153,7 @@ class FoodTimelineItem extends StatelessWidget {
       case 'dinner':
         return Icons.nights_stay_outlined;
       default:
-        return Icons.apple;
+        return Icons.cookie_outlined;
     }
   }
 }
