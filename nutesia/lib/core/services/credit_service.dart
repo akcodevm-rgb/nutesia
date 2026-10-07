@@ -26,7 +26,7 @@ class CreditService {
   Future<CreditState> addRewardedAdCredit(String deviceId) async {
     try {
       return CreditState.fromJson(await _api.rewardAd(deviceId));
-    } on ApiException catch (error) {
+    } on NetworkException catch (error) {
       if (error.statusCode == 409) throw const RewardLimitException('Daily ad reward limit reached');
       rethrow;
     }

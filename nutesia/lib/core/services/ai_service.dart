@@ -30,19 +30,8 @@ class AIService {
     String content;
     try {
       content = await _api.parseFood(deviceId: deviceId, input: input);
-    } on ApiException catch (error) {
-      if (error.statusCode == 402) {
-        final body = jsonDecode(error.body) as Map<String, dynamic>;
-        throw CreditException(currentCredits: body['currentCredits'] as int? ?? 0);
-      }
-      try {
-        final body = jsonDecode(error.body) as Map<String, dynamic>;
-        if (body['error'] != null) {
-          throw Exception(body['error']);
-        }
-      } catch (_) {
-        // Fallback if parsing response body fails
-      }
+    } on NetworkException catch (error) {
+      if (error.statusCode == 402) throw const CreditException(currentCredits: 0);
       rethrow;
     }
     final data = jsonDecode(content) as Map<String, dynamic>;
@@ -76,11 +65,8 @@ class AIService {
       content = await _api.analyzeDeficiencies(
         deviceId: deviceId, startDate: startDate, endDate: endDate,
       );
-    } on ApiException catch (error) {
-      if (error.statusCode == 402) {
-        final body = jsonDecode(error.body) as Map<String, dynamic>;
-        throw CreditException(currentCredits: body['currentCredits'] as int? ?? 0);
-      }
+    } on NetworkException catch (error) {
+      if (error.statusCode == 402) throw const CreditException(currentCredits: 0);
       rethrow;
     }
     return jsonDecode(content) as Map<String, dynamic>;

@@ -54,17 +54,20 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
         );
         _inputController.clear();
       } else if (context.mounted) {
-        final parseError = addFood.appError ?? addFood.parseError;
-        if (parseError is CreditException) {
+        if (addFood.parseError is CreditException) {
+          // The server refused for lack of credits: show the real balance.
+          await creditProvider.refresh();
+          if (!context.mounted) return;
           await showNotEnoughCreditsDialog(
             context: context,
             requiredCredits: CreditConstants.foodParseCost,
-            currentCredits: parseError.currentCredits,
+            currentCredits: creditProvider.creditBalance,
             featureName: 'food analysis',
           );
           return;
         }
 
+        final parseError = addFood.appError ?? addFood.parseError;
         AppToast.showError(
           context,
           parseError,

@@ -109,6 +109,10 @@ class ErrorParser {
       case NetworkErrorType.serverError:
         return ApiAppError.serverError(message: sanitize(e.message), statusCode: e.statusCode);
       case NetworkErrorType.unknown:
+        // The server answered (e.g. 400, 402, 409): read its error envelope.
+        if (e.statusCode != null && e.body != null) {
+          return _parseApiException(ApiException(e.statusCode!, e.body!));
+        }
         return _parseFromString(e.message, e.statusCode);
     }
   }

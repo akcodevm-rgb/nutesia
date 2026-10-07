@@ -156,10 +156,11 @@ class AnalyticsProvider extends ChangeNotifier {
       _deficiencyState = DeficiencyAnalysisState(result: result);
       notifyListeners();
     } on CreditException catch (e) {
+      await creditProvider.refresh();
       _deficiencyState = DeficiencyAnalysisState(
         error: e.toString(),
         requiredCredits: 3,
-        currentCredits: e.currentCredits,
+        currentCredits: creditProvider.creditBalance,
       );
       notifyListeners();
     } catch (e) {
