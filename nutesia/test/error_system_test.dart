@@ -205,6 +205,28 @@ void main() {
       expect(ErrorParser.parse(unauth), isA<AuthAppError>());
     });
 
+    test('Reads the server error envelope carried by a NetworkException', () {
+      const noCredits = NetworkException(
+        type: NetworkErrorType.unknown,
+        message: 'Server returned status code 402.',
+        statusCode: 402,
+        body: '{"success":false,"statusCode":402,"error":{"code":"INSUFFICIENT_CREDITS",'
+            '"message":"Not enough credits for AI analysis. Watch an ad to earn free credits.","retryable":false}}',
+      );
+      final appErr = ErrorParser.parse(noCredits);
+      expect(appErr, isA<BusinessAppError>());
+      expect(appErr.code, 'INSUFFICIENT_CREDITS');
+      expect(appErr.message.contains('402'), isFalse);
+
+      const badFood = NetworkException(
+        type: NetworkErrorType.unknown,
+        message: 'Invalid food input.',
+        statusCode: 400,
+        body: '{"error":"Invalid food input. Please describe a food item."}',
+      );
+      expect(ErrorParser.parse(badFood).message, 'Invalid food input. Please describe a food item.');
+    });
+
     test('Parses CreditException and RewardLimitException', () {
       const credErr = CreditException(currentCredits: 0);
       final appErr1 = ErrorParser.parse(credErr);

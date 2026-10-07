@@ -240,6 +240,7 @@ class ApiDataService {
         NetworkErrorType errorType = NetworkErrorType.unknown;
         String message = 'Unable to connect to service. Please check your connection.';
         int? statusCode;
+        String? body;
 
         final rawString = e.toString();
 
@@ -257,6 +258,7 @@ class ApiDataService {
           message = 'Unable to connect to Nutesia servers. Please check your network connection.';
         } else if (e is ApiException) {
           statusCode = e.statusCode;
+          body = e.body;
           message = _extractSafeErrorMessage(e.body, e.statusCode);
           if (e.statusCode == 401) {
             errorType = NetworkErrorType.unauthorized;
@@ -283,7 +285,7 @@ class ApiDataService {
           continue;
         }
 
-        throw NetworkException(type: errorType, message: message, statusCode: statusCode);
+        throw NetworkException(type: errorType, message: message, statusCode: statusCode, body: body);
       }
     }
   }
@@ -427,6 +429,8 @@ class ApiDataService {
       final decoded = jsonDecode(body);
       if (decoded is Map && decoded.containsKey('error') && decoded['error'] is String) {
         return _sanitizeMessage(decoded['error'] as String);
+      } else if (decoded is Map && decoded['error'] is Map && decoded['error']['message'] is String) {
+        return _sanitizeMessage(decoded['error']['message'] as String);
       } else if (decoded is Map && decoded.containsKey('message') && decoded['message'] is String) {
         return _sanitizeMessage(decoded['message'] as String);
       }
@@ -451,7 +455,10 @@ class NetworkException implements Exception {
   final String message;
   final int? statusCode;
 
-  const NetworkException({required this.type, required this.message, this.statusCode});
+  /// The server's response body, when the server answered with an error.
+  final String? body;
+
+  const NetworkException({required this.type, required this.message, this.statusCode, this.body});
 
   @override
   String toString() => message;
