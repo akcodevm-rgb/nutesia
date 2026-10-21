@@ -244,8 +244,11 @@ class _MacroGrid extends StatelessWidget {
               AppTheme.proteinColor),
           _DetailRow('Carbohydrates', '${nutrition.carbs.round()} g',
               AppTheme.carbsColor),
-          _DetailRow(
-              'Fat', '${nutrition.fat.round()} g', AppTheme.fatColor,
+          _DetailRow('Fat', '${nutrition.fat.round()} g', AppTheme.fatColor),
+          _DetailRow('Fiber', '${nutrition.fiber.round()} g',
+              AppTheme.fiberColor),
+          _DetailRow('Omega-3', '${nutrition.omega3.toStringAsFixed(1)} g',
+              AppTheme.omega3Color,
               isLast: true),
         ],
       ),

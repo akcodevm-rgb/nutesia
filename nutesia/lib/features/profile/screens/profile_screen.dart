@@ -434,6 +434,16 @@ class _ProfileContent extends StatelessWidget {
                     'Fat',
                     '${activeMember!.dailyTargets.fat.round()} g',
                     AppTheme.fatColor,
+                  ),
+                  _TargetRow(
+                    'Fiber',
+                    '${activeMember!.dailyTargets.fiber.round()} g',
+                    AppTheme.fiberColor,
+                  ),
+                  _TargetRow(
+                    'Omega-3',
+                    '${activeMember!.dailyTargets.omega3.toStringAsFixed(1)} g',
+                    AppTheme.omega3Color,
                     isLast: true,
                   ),
                 ],
@@ -507,6 +517,7 @@ class _ProfileContent extends StatelessWidget {
                 '• Pediatric Energy: Schofield (1985) + DRI Growth Allowance\n'
                 '• Nutrients: National Academies Dietary Reference Intakes (DRI)\n'
                 '• Dietary Fiber: WHO (2023) Healthy Diet & DRI Guidelines\n'
+                '• Omega-3: DRI Adequate Intake for ALA (NIH Office of Dietary Supplements)\n'
                 '• Hydration: Holliday-Segar & 35ml/kg Fluid Standards',
                 style: TextStyle(color: AppTheme.textSecondary, fontSize: 11, height: 1.45),
               ),

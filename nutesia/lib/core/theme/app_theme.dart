@@ -38,6 +38,8 @@ class AppTheme {
   static const Color proteinColor = Color(0xFF74B9FF);
   static const Color carbsColor = Color(0xFFFFD93D);
   static const Color fatColor = Color(0xFFFF9F43);
+  static const Color fiberColor = Color(0xFF55EFC4);
+  static const Color omega3Color = Color(0xFF81ECEC);
 
   static Color mealColor(String meal) {
     switch (meal.toLowerCase()) {

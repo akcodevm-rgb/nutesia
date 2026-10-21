@@ -138,28 +138,52 @@ class _MacroSummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        _MacroMini(
-            label: 'Protein',
-            consumed: consumed.protein,
-            target: targets.protein,
-            unit: 'g',
-            color: AppTheme.proteinColor),
+        Row(
+          children: [
+            _MacroMini(
+                label: 'Protein',
+                consumed: consumed.protein,
+                target: targets.protein,
+                unit: 'g',
+                color: AppTheme.proteinColor),
+            const Gap(8),
+            _MacroMini(
+                label: 'Carbs',
+                consumed: consumed.carbs,
+                target: targets.carbs,
+                unit: 'g',
+                color: AppTheme.carbsColor),
+            const Gap(8),
+            _MacroMini(
+                label: 'Fat',
+                consumed: consumed.fat,
+                target: targets.fat,
+                unit: 'g',
+                color: AppTheme.fatColor),
+          ],
+        ),
         const Gap(8),
-        _MacroMini(
-            label: 'Carbs',
-            consumed: consumed.carbs,
-            target: targets.carbs,
-            unit: 'g',
-            color: AppTheme.carbsColor),
-        const Gap(8),
-        _MacroMini(
-            label: 'Fat',
-            consumed: consumed.fat,
-            target: targets.fat,
-            unit: 'g',
-            color: AppTheme.fatColor),
+        Row(
+          children: [
+            _MacroMini(
+                label: 'Fiber',
+                consumed: consumed.fiber,
+                target: targets.fiber,
+                unit: 'g',
+                color: AppTheme.fiberColor),
+            const Gap(8),
+            // Omega-3 targets are 1-2 g a day, so whole grams would hide progress.
+            _MacroMini(
+                label: 'Omega-3',
+                consumed: consumed.omega3,
+                target: targets.omega3,
+                unit: 'g',
+                decimals: 1,
+                color: AppTheme.omega3Color),
+          ],
+        ),
       ],
     );
   }
@@ -171,6 +195,7 @@ class _MacroMini extends StatelessWidget {
   final double target;
   final String unit;
   final Color color;
+  final int decimals;
 
   const _MacroMini({
     required this.label,
@@ -178,6 +203,7 @@ class _MacroMini extends StatelessWidget {
     required this.target,
     required this.unit,
     required this.color,
+    this.decimals = 0,
   });
 
   @override
@@ -201,14 +227,14 @@ class _MacroMini extends StatelessWidget {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: '${consumed.round()}',
+                    text: consumed.toStringAsFixed(decimals),
                     style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: color),
                   ),
                   TextSpan(
-                    text: '/${target.round()}$unit',
+                    text: '/${target.toStringAsFixed(decimals)}$unit',
                     style: const TextStyle(
                         fontSize: 10, color: AppTheme.textSecondary),
                   ),
