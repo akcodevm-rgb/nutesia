@@ -146,11 +146,24 @@ class BMIUtils {
       carbsGrams = math.max(130.0, ((targetCalories - proteinCal - fatCal) / 4.0).roundToDouble());
     }
 
+    // Fiber: WHO / DRI (pediatric age + 5 g, min 14 g). Omega-3: DRI ALA Adequate Intake.
+    final double fiberGrams;
+    final double omega3Grams;
+    if (age < 18) {
+      fiberGrams = math.max(14.0, age + 5.0);
+      omega3Grams = age <= 3 ? 0.7 : age <= 8 ? 0.9 : age <= 13 ? (isMale ? 1.2 : 1.0) : (isMale ? 1.6 : 1.1);
+    } else {
+      fiberGrams = age >= 51 ? (isMale ? 30.0 : 21.0) : (isMale ? 34.0 : 28.0);
+      omega3Grams = isMale ? 1.6 : 1.1;
+    }
+
     return NutritionData(
       calories: targetCalories.roundToDouble(),
       protein: proteinGrams,
       carbs: carbsGrams,
       fat: fatGrams,
+      fiber: fiberGrams,
+      omega3: omega3Grams,
       vitamins: const Vitamins(
         vitaminA: 900,
         vitaminB1: 1.2,

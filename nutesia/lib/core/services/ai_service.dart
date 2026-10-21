@@ -95,6 +95,8 @@ class AIService {
           protein: _number(item['protein']),
           carbs: _number(item['carbs']),
           fat: _number(item['fat']),
+          fiber: _number(item['fiber']),
+          omega3: _number(item['omega3']),
           vitamins: _vitamins(item['vitamins'] as Map<String, dynamic>?),
           minerals: _minerals(item['minerals'] as Map<String, dynamic>?),
         ),

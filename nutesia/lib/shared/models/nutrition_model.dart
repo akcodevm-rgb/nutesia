@@ -121,6 +121,8 @@ class NutritionData {
   final double protein; // g
   final double carbs; // g
   final double fat; // g
+  final double fiber; // g
+  final double omega3; // g, ALA + EPA + DHA
   final Vitamins vitamins;
   final Minerals minerals;
 
@@ -129,6 +131,8 @@ class NutritionData {
     this.protein = 0,
     this.carbs = 0,
     this.fat = 0,
+    this.fiber = 0,
+    this.omega3 = 0,
     this.vitamins = const Vitamins(),
     this.minerals = const Minerals(),
   });
@@ -138,6 +142,8 @@ class NutritionData {
         protein: _toDouble(json['protein']),
         carbs: _toDouble(json['carbs']),
         fat: _toDouble(json['fat']),
+        fiber: _toDouble(json['fiber']),
+        omega3: _toDouble(json['omega3']),
         vitamins: json['vitamins'] != null
             ? Vitamins.fromJson(json['vitamins'] as Map<String, dynamic>)
             : const Vitamins(),
@@ -151,6 +157,8 @@ class NutritionData {
         'protein': protein,
         'carbs': carbs,
         'fat': fat,
+        'fiber': fiber,
+        'omega3': omega3,
         'vitamins': vitamins.toJson(),
         'minerals': minerals.toJson(),
       };
@@ -160,6 +168,8 @@ class NutritionData {
         protein: protein + o.protein,
         carbs: carbs + o.carbs,
         fat: fat + o.fat,
+        fiber: fiber + o.fiber,
+        omega3: omega3 + o.omega3,
         vitamins: vitamins + o.vitamins,
         minerals: minerals + o.minerals,
       );
@@ -169,6 +179,8 @@ class NutritionData {
         protein: protein * factor,
         carbs: carbs * factor,
         fat: fat * factor,
+        fiber: fiber * factor,
+        omega3: omega3 * factor,
         vitamins: Vitamins(
           vitaminA: vitamins.vitaminA * factor,
           vitaminB1: vitamins.vitaminB1 * factor,
